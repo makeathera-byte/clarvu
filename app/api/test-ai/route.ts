@@ -18,22 +18,31 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return errorResponse(
-        "GROQ_API_KEY environment variable is not configured. Please add it to your .env.local file.",
+        "GROQ_API_KEY environment variable is not configured. Please add it to your Vercel environment variables (Settings → Environment Variables).",
         500
       );
     }
 
     // Test 1: Basic API connectivity
     let basicTestResult: any = null;
+    let basicTestError: string | null = null;
     try {
       basicTestResult = await runGroqChat<string>(
         "Say 'Hello, DayFlow!' if you can read this. Only respond with the greeting.",
         false,
         "llama-3.1-8b-instant"
       );
+      if (!basicTestResult) {
+        basicTestError = "API returned null response";
+      }
     } catch (error: any) {
+      basicTestError = error.message || "Unknown error";
+      console.error("Basic API test error:", error);
+    }
+    
+    if (basicTestError) {
       return errorResponse(
-        `Basic API test failed: ${error.message || "Unknown error"}`,
+        `Basic API test failed: ${basicTestError}`,
         500
       );
     }

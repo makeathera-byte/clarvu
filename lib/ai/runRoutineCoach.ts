@@ -152,13 +152,20 @@ Generate a JSON response with an optimized routine and explanation:
 Return ONLY valid JSON.`;
 
     // Call Groq AI
-    const aiResponse = await runGroqChat<RoutineResponse>(
-      prompt,
-      true,
-      "llama-3.1-8b-instant"
-    );
+    let aiResponse: RoutineResponse | null = null;
+    try {
+      aiResponse = await runGroqChat<RoutineResponse>(
+        prompt,
+        true,
+        "llama-3.1-8b-instant"
+      );
+    } catch (error: any) {
+      console.error("Error calling Groq API for routine coach:", error);
+      // Continue to fallback
+    }
 
     if (!aiResponse || !aiResponse.routine) {
+      console.log("AI routine generation unavailable or failed - using baseline routine");
       // Fallback to baseline routine
       return {
         routine: baselineRoutine,

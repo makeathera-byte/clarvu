@@ -5,8 +5,9 @@ let groqClient: Groq | null = null;
 /**
  * Get or create a Groq client instance
  * Uses GROQ_API_KEY environment variable
+ * Returns null if API key is not configured (for graceful degradation)
  */
-export function getGroqClient(): Groq {
+export function getGroqClient(): Groq | null {
   if (groqClient) {
     return groqClient;
   }
@@ -14,9 +15,8 @@ export function getGroqClient(): Groq {
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    throw new Error(
-      "GROQ_API_KEY environment variable is required. Please add it to your .env.local file."
-    );
+    console.warn("GROQ_API_KEY not configured. AI features will be disabled.");
+    return null;
   }
 
   groqClient = new Groq({
@@ -35,6 +35,11 @@ export async function groqChat(
   model: "llama-3.1-8b-instant" | "mixtral-8x7b-32768" = "llama-3.1-8b-instant"
 ) {
   const groq = getGroqClient();
+  
+  if (!groq) {
+    console.warn("Groq client not available - GROQ_API_KEY not configured");
+    return null;
+  }
 
   try {
     const completion = await groq.chat.completions.create({
@@ -94,6 +99,11 @@ export async function runGroqChat<T = any>(
   model: "mixtral-8x7b-32768" | "llama-3.1-8b-instant" = "mixtral-8x7b-32768"
 ): Promise<T | null> {
   const groq = getGroqClient();
+  
+  if (!groq) {
+    console.warn("Groq client not available - GROQ_API_KEY not configured");
+    return null;
+  }
 
   try {
     // Convert string prompt to messages array

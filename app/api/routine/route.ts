@@ -154,11 +154,18 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (supabaseUrl && supabaseServiceKey) {
+    // Check if GROQ_API_KEY is configured
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (supabaseUrl && supabaseServiceKey && groqApiKey) {
       try {
         aiRoutine = await runRoutineCoach(supabaseUrl, supabaseServiceKey, user.id);
       } catch (aiError: any) {
         console.error("AI routine generation failed:", aiError);
+        console.error("Error details:", {
+          message: aiError?.message,
+          status: aiError?.status,
+          code: aiError?.code,
+        });
         
         // If 429 error, try to return cached routine from today or yesterday
         if (aiError?.message?.includes("429") || aiError?.status === 429) {
@@ -186,6 +193,12 @@ export async function POST(request: NextRequest) {
         }
         // Continue with baseline routine if no cache available
       }
+    } else {
+      console.warn("AI routine generation skipped - missing environment variables:", {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey,
+        hasGroqKey: !!groqApiKey,
+      });
     }
 
     // Use AI routine if available, otherwise use baseline
