@@ -1,0 +1,17 @@
+{
+  "daily-summary": {
+    "schedule": "0 * * * *",
+    "timezone": "UTC",
+    "description": "Run hourly to check each user's ai_summary_time and generate summaries at their specified time (checks within 1-hour window)"
+  },
+  "weekly-summary": {
+    "schedule": "0 3 * * 1",
+    "timezone": "UTC",
+    "description": "Generate weekly summaries every Monday at 3 AM UTC (summarizes the previous completed week)"
+  },
+  "monthly-summary": {
+    "schedule": "0 3 2 * *",
+    "timezone": "UTC",
+    "description": "Generate monthly summaries on the 2nd of each month at 3 AM UTC (summarizes the previous completed month)"
+  }
+}
