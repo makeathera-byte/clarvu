@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       new Set(
         (logs || [])
           .map((log: { activity: string | null }) => log.activity?.trim())
-          .filter((activity): activity is string => !!activity)
+          .filter((activity: string | undefined): activity is string => !!activity)
       )
     );
 
