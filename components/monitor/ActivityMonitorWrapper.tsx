@@ -7,6 +7,9 @@ import { detectContext } from "@/lib/context/detector";
 import { getQuickContextSuggestion } from "@/lib/suggestions/smartSuggestions";
 import { detectRealTimeContextSwitch } from "@/lib/insights/businessMetrics";
 
+// Re-export ActivityEvent for convenience
+export type { ActivityEvent };
+
 interface ActivityMonitorWrapperProps {
   onContextChange?: (context: ActivityEvent) => void;
   onContextSwitch?: (from: string, to: string) => void;

@@ -126,7 +126,7 @@ export function DayDetailModal({
                   <div className="text-2xl font-semibold">
                     {summary?.focus_score ? `${Math.round(summary.focus_score)}%` : "N/A"}
                   </div>
-                  {comparison?.focusScoreChange !== null && comparison.focusScoreChange !== undefined && (
+                  {comparison && comparison.focusScoreChange !== null && comparison.focusScoreChange !== undefined && (
                     <div className="flex items-center gap-1 text-xs">
                       {getTrendIcon(comparison.focusScoreChange)}
                       <span

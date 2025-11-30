@@ -168,19 +168,19 @@ export function SummaryStatsCards({
                 </div>
                 <div className="flex items-baseline gap-2">
                   <div className="text-2xl font-semibold">{stat.value}</div>
-                  {stat.trend !== null && (
+                  {stat.trend !== null && stat.trend !== undefined && (
                     <div className="flex items-center gap-1 text-xs">
-                      {getTrendIcon(stat.trend)}
+                      {getTrendIcon(stat.trend ?? null)}
                       <span
                         className={cn(
-                          stat.trend && stat.trend > 0
+                          stat.trend > 0
                             ? "text-green-600 dark:text-green-400"
-                            : stat.trend && stat.trend < 0
+                            : stat.trend < 0
                             ? "text-red-600 dark:text-red-400"
                             : "text-muted-foreground"
                         )}
                       >
-                        {stat.trend !== null && stat.trend !== 0
+                        {stat.trend !== 0
                           ? `${stat.trend > 0 ? "+" : ""}${Math.abs(stat.trend).toFixed(1)}h`
                           : null}
                       </span>

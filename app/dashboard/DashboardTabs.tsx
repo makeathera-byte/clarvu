@@ -30,13 +30,7 @@ interface ActivityLog {
   }[];
 }
 
-interface DailySummary {
-  id: string;
-  summary: string;
-  focus_score: number | null;
-  insights: string | null;
-  date: string;
-}
+import type { DailySummary } from "@/lib/types";
 
 interface WeeklySummary {
   id: string;

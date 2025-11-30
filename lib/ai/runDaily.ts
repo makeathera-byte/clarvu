@@ -65,13 +65,13 @@ export async function runDaily(
     }
 
     // Calculate metrics
-    const metrics = calculateFocusMetrics(logs as ActivityLog[]);
+    const metrics = calculateFocusMetrics(logs as unknown as ActivityLog[]);
 
     // Calculate deterministic focus score as baseline
     const deterministicScore = require("./focusScore").calculateFocusScore(metrics);
 
     // Generate AI summary prompt
-    const summaryPrompt = buildDailyPrompt(logs as ActivityLog[], metrics);
+    const summaryPrompt = buildDailyPrompt(logs as unknown as ActivityLog[], metrics);
     
     // Call Groq for summary
     const summaryResult = await runGroqChat<{

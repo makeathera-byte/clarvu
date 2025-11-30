@@ -144,6 +144,12 @@ export function LogTimeEditor({
     }
   };
 
+  const handleCancelClick = () => {
+    resetAdjustments();
+    if (onClose) onClose();
+    if (onOpenChange) onOpenChange(false);
+  };
+
   const previewStart = getPreviewStartTime();
   const previewEnd = getPreviewEndTime();
 
@@ -313,7 +319,7 @@ export function LogTimeEditor({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={handleClose}
+                onClick={handleCancelClick}
                 disabled={isUpdating}
               >
                 Cancel

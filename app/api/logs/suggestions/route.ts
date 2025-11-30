@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Extract unique activity names
-    const uniqueActivities = Array.from(
+    const uniqueActivities: string[] = Array.from(
       new Set(
         (logs || [])
           .map((log: { activity: string | null }) => log.activity?.trim())
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
     });
 
     const sortedActivities = uniqueActivities.sort((a, b) => {
-      const countA = activityCounts.get(a) || 0;
-      const countB = activityCounts.get(b) || 0;
+      const countA = activityCounts.get(a) ?? 0;
+      const countB = activityCounts.get(b) ?? 0;
       if (countB !== countA) {
         return countB - countA; // Sort by frequency (descending)
       }

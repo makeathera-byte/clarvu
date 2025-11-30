@@ -15,6 +15,7 @@ import { getUserDisplayName } from "@/lib/utils/user";
 import { calculateDurationMinutes } from "@/lib/utils/time";
 import { getBusinessType, inferBusinessType } from "@/lib/utils/categories";
 import { SummaryReadyNotification } from "@/components/notifications/SummaryReadyNotification";
+import type { ActivityLog } from "@/lib/types";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -37,7 +38,7 @@ export default async function DashboardPage() {
   const weeklyLogs = weeklyLogsResult.logs || [];
   
   // Calculate today's metrics for comparison
-  const todayRevenueMinutes = logs.reduce((total, log) => {
+  const todayRevenueMinutes = logs.reduce((total: number, log: ActivityLog) => {
     if (!log.start_time || !log.end_time) return total;
     const businessType = log.categories?.business_type || inferBusinessType(log.categories?.name);
     if (businessType === "revenue") {
@@ -71,7 +72,7 @@ export default async function DashboardPage() {
     .gte("start_time", yesterday.toISOString())
     .lt("start_time", yesterdayEnd.toISOString());
 
-  const yesterdayRevenueMinutes = (yesterdayLogs || []).reduce((total, log) => {
+  const yesterdayRevenueMinutes = (yesterdayLogs || []).reduce((total: number, log: ActivityLog) => {
     if (!log.start_time || !log.end_time) return total;
     const businessType = log.categories?.business_type || inferBusinessType(log.categories?.name);
     if (businessType === "revenue") {

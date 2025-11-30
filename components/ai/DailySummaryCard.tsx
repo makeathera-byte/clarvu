@@ -2,17 +2,11 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTimeForDisplay } from "@/lib/utils/time";
-
-interface DailySummary {
-  id: string;
-  summary: string;
-  focus_score: number | null;
-  insights: string | null;
-  date: string;
-}
+import type { DailySummary } from "@/lib/types";
 
 interface DailySummaryCardProps {
   summary: DailySummary | null;
+  aiSummaryTime?: string | null;
 }
 
 export function DailySummaryCard({ summary, aiSummaryTime = null }: DailySummaryCardProps) {
@@ -105,7 +99,7 @@ export function DailySummaryCard({ summary, aiSummaryTime = null }: DailySummary
         <div>
           <h4 className="text-sm font-semibold mb-3 text-foreground">Summary</h4>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            {summary.summary}
+            {summary.summary || "No summary available."}
           </p>
         </div>
 

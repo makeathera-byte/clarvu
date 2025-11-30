@@ -29,20 +29,12 @@ const nextConfig: NextConfig = {
   // React strict mode
   reactStrictMode: true,
   
-  // Optimize production builds
-  swcMinify: true,
-  
   // Output configuration for Vercel
   output: 'standalone',
   
   // TypeScript configuration
   typescript: {
     ignoreBuildErrors: false,
-  },
-  
-  // ESLint configuration
-  eslint: {
-    ignoreDuringBuilds: false,
   },
 };
 

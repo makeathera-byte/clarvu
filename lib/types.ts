@@ -3,7 +3,7 @@
  * Centralized type definitions for consistency across the codebase
  */
 
-import { Database } from "./supabase/database.types";
+// import { Database } from "./supabase/database.types"; // Commented out - file may not exist
 
 // Activity Log types
 export interface ActivityLog {
@@ -53,6 +53,7 @@ export interface DailySummary {
   date: string;
   summary: string | null;
   focus_score: number | null;
+  insights?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -163,6 +164,7 @@ export interface ApiResponse<T = unknown> {
 }
 
 // Helper: Extract types from Supabase if available
-export type DatabaseActivityLog = Database["public"]["Tables"]["activity_logs"]["Row"];
-export type DatabaseCategory = Database["public"]["Tables"]["categories"]["Row"];
+// Commented out - database.types file may not exist
+// export type DatabaseActivityLog = Database["public"]["Tables"]["activity_logs"]["Row"];
+// export type DatabaseCategory = Database["public"]["Tables"]["categories"]["Row"];
 
