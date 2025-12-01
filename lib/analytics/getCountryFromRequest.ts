@@ -88,8 +88,8 @@ function getClientIP(request: NextRequest): string {
     return cfConnectingIP;
   }
 
-  // Fallback: try to get from request IP (may not be available in all environments)
-  const ip = request.ip || request.headers.get("x-client-ip");
+  // Fallback: try to get from x-client-ip header
+  const ip = request.headers.get("x-client-ip");
   return ip || "unknown";
 }
 

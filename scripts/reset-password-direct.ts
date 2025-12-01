@@ -27,6 +27,9 @@ async function resetPassword() {
   const newPassword = "pp06082006pp";
 
   try {
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Supabase environment variables are not defined");
+    }
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,

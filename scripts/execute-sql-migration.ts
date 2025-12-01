@@ -25,6 +25,9 @@ async function executeSQL() {
     const sql = readFileSync(sqlPath, "utf-8");
 
     // Extract project ID from URL
+    if (!supabaseUrl) {
+      throw new Error("Supabase URL is not defined");
+    }
     const projectId = supabaseUrl.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1];
     
     if (!projectId) {
@@ -65,6 +68,9 @@ async function executeSQL() {
     // But let's try to at least verify the connection works
     
     const { createClient } = await import("@supabase/supabase-js");
+    if (!supabaseServiceKey) {
+      throw new Error("Supabase service role key is not defined");
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Test connection by trying to query a system table

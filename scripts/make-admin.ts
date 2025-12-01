@@ -18,7 +18,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// TypeScript type narrowing - we know these are defined after the check above
+const supabase = createClient(supabaseUrl as string, supabaseServiceKey as string);
 
 async function makeAdmin() {
   const email = "makeathera@gmail.com";

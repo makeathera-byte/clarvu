@@ -93,6 +93,9 @@ async function runMigration() {
     console.log("⚡ Trying alternative method: Using Supabase client...\n");
 
     const { createClient } = await import("@supabase/supabase-js");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Supabase environment variables are not defined");
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if tables already exist

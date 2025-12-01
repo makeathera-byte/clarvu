@@ -32,6 +32,9 @@ async function runMigration() {
     console.log("📄 SQL migration file loaded\n");
 
     // Create Supabase admin client
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Supabase environment variables are not defined");
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -59,6 +62,9 @@ async function runMigration() {
       try {
         // Use RPC or direct query - Supabase doesn't have a direct SQL execution endpoint
         // We'll use the REST API with the service role key
+        if (!supabaseUrl || !supabaseServiceKey) {
+          throw new Error("Supabase environment variables are not defined");
+        }
         const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql`, {
           method: "POST",
           headers: {
