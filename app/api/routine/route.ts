@@ -526,7 +526,7 @@ export async function POST(request: NextRequest) {
             .limit(5);
           
           if (allRoutines.data) {
-            console.log("Available routines in database:", allRoutines.data.map(r => r.date));
+            console.log("Available routines in database:", allRoutines.data.map((r: { date: string }) => r.date));
           }
         }
       } else {
