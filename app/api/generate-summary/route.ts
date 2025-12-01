@@ -2,6 +2,9 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserOrThrow, unauthorizedResponse } from "@/lib/api/auth";
 import { successResponse, errorResponse } from "@/lib/api/responses";
+import { logEvent } from "@/lib/analytics/logEvent";
+import { logError } from "@/lib/analytics/logError";
+import { logSlowRoute } from "@/lib/analytics/logSlowRoute";
 import Groq from "groq-sdk";
 
 interface ActivityLog {
@@ -136,7 +139,10 @@ export async function POST(request: NextRequest) {
 
     const totalHours = (metrics.totalWorkTime / 60).toFixed(1);
 
-    // Generate AI summary
+    // Generate AI summary (track timing)
+    const aiStartTime = Date.now();
+    let aiResponse = "";
+    let aiResponseTime = 0;
     const prompt = `Today's Activity Log (${logs.length} activities, ${totalHours}h total work time):
 
 ${compressedLogs}
@@ -154,21 +160,45 @@ Generate a JSON response:
 
 Return ONLY valid JSON, no markdown or extra text.`;
 
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a productivity coach analyzing someone's daily activity log. Generate a concise, insightful daily summary. Keep it under 150 words.",
-        },
-        { role: "user", content: prompt },
-      ],
-      model: "llama-3.1-8b-instant",
-      temperature: 0.7,
-      max_tokens: 500,
-    });
-
-    const aiResponse = completion.choices[0]?.message?.content || "";
+    try {
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a productivity coach analyzing someone's daily activity log. Generate a concise, insightful daily summary. Keep it under 150 words.",
+          },
+          { role: "user", content: prompt },
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+      
+      aiResponseTime = Date.now() - aiStartTime;
+      aiResponse = completion.choices[0]?.message?.content || "";
+      
+      // Log successful AI API call
+      try {
+        await logEvent(user.id, "ai_api_request", aiResponseTime);
+        await logEvent(user.id, "groq_api_success", aiResponseTime);
+        if (aiResponseTime > 1000) {
+          await logSlowRoute(user.id, "groq_api", aiResponseTime);
+        }
+      } catch (logError) {
+        console.error("Error logging AI API call:", logError);
+      }
+    } catch (aiError: any) {
+      aiResponseTime = Date.now() - aiStartTime;
+      // Log AI API error
+      try {
+        await logError(user.id, "ai_error", `Groq API error: ${aiError.message}`);
+        await logError(user.id, "groq_api_error", aiError.message);
+      } catch (logError) {
+        console.error("Error logging AI error:", logError);
+      }
+      throw aiError;
+    }
 
     // Parse JSON response
     let summaryData: { summary: string; insights?: string } = {
@@ -209,6 +239,15 @@ Return ONLY valid JSON, no markdown or extra text.`;
       );
     }
 
+    // Log summary generation event
+    try {
+      await logEvent(user.id, "summary_generated");
+      console.log("✅ Logged summary_generated event for user:", user.id);
+    } catch (logError) {
+      console.error("❌ Error logging summary generation:", logError);
+      // Don't fail the request if logging fails
+    }
+
     return successResponse({
       message: "AI summary generated successfully!",
       summary: {
@@ -221,6 +260,20 @@ Return ONLY valid JSON, no markdown or extra text.`;
     if (error.message === "Unauthorized") {
       return unauthorizedResponse();
     }
+    
+    // Log error (try to get user, but don't fail if we can't)
+    try {
+      try {
+        const user = await getUserOrThrow();
+        await logError(user.id, "api_error", `generate-summary: ${error.message}`);
+      } catch {
+        // If we can't get user, log as system error
+        await logError(null, "api_error", `generate-summary: ${error.message}`);
+      }
+    } catch (logError) {
+      console.error("Error logging API error:", logError);
+    }
+    
     console.error("Error generating summary:", error);
     return errorResponse(error.message || "Failed to generate summary", 500);
   }

@@ -6,6 +6,7 @@ import { EnvBanner } from "@/components/layout/env-banner";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ThemeSync } from "@/components/layout/ThemeSync";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { TimezoneDetector } from "@/components/dashboard/TimezoneDetector";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,9 +79,10 @@ export default function RootLayout({
           >
             <ThemeSync />
             <div className="min-h-screen bg-background transition-colors">
-              <EnvBanner />
               <NavbarClient />
               <main className="transition-all duration-300 ease-in-out">
+                <TimezoneDetector />
+                <EnvBanner />
                 {children}
               </main>
             </div>

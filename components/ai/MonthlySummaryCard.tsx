@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface MonthlySummary {
@@ -14,6 +15,26 @@ interface MonthlySummaryCardProps {
 }
 
 export function MonthlySummaryCard({ summary }: MonthlySummaryCardProps) {
+  // Log summary opened event when summary is displayed
+  useEffect(() => {
+    if (summary) {
+      fetch("/api/analytics/log-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "summary_opened" }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            console.log("✅ Logged summary_opened event (monthly)");
+          } else {
+            console.error("❌ Failed to log summary_opened:", data.error);
+          }
+        })
+        .catch((err) => console.error("❌ Error logging summary opened:", err));
+    }
+  }, [summary]);
+
   const formatMonth = (monthStr: string) => {
     const date = new Date(monthStr);
     return date.toLocaleDateString("en-US", {

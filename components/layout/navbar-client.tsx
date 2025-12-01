@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { Settings, User, LogOut, Mail } from "lucide-react";
+import { Settings, User, LogOut, Mail, Crown } from "lucide-react";
+import { isAdminEmail } from "@/lib/utils/admin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +51,11 @@ export function NavbarClient() {
       console.warn("Supabase client initialization error:", error);
     }
   }, []);
+
+  // Hide navbar on admin pages (check after all hooks are called)
+  if (pathname?.startsWith("/ppadminpp")) {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {
@@ -150,6 +156,17 @@ export function NavbarClient() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {isAdminEmail(user.email) && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/ppadminpp" className="cursor-pointer">
+                          <Crown className="mr-2 h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          <span className="font-medium">Admin Portal</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />

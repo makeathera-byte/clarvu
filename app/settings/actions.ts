@@ -8,10 +8,32 @@ export async function getUserSettings() {
   
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
 
+  // Handle authentication errors
+  if (authError) {
+    console.error("❌ Auth error in getUserSettings:", authError);
+    
+    // If user doesn't exist in JWT, return error
+    if (authError.message?.includes("does not exist") || authError.message?.includes("JWT")) {
+      return { 
+        error: "Session expired. Please log in again.",
+        requiresLogin: true 
+      };
+    }
+    
+    return { 
+      error: `Authentication error: ${authError.message}`,
+      requiresLogin: true 
+    };
+  }
+
   if (!user) {
-    return { error: "Unauthorized" };
+    return { 
+      error: "Unauthorized",
+      requiresLogin: true 
+    };
   }
 
   const { data, error } = await supabase
@@ -41,6 +63,63 @@ export async function getUserSettings() {
   // Return default if no settings exist
   if (!data) {
     return { settings: { reminder_interval: 30 } };
+  }
+
+  // If country is missing but user has signup_events with country, ALWAYS backfill
+  if (!data.country || data.country === "unknown" || data.country === null || data.country === "") {
+    try {
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      const adminClient = createAdminClient();
+      
+      const { data: signupEvent } = await adminClient
+        .from("signup_events")
+        .select("country")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      console.log("🔍 Checking signup_events for country:", signupEvent);
+      
+      if (signupEvent?.country && signupEvent.country !== "unknown" && signupEvent.country !== null && signupEvent.country !== "") {
+        // Backfill country from signup_events
+        const { getTimezoneFromCountry } = await import("@/lib/utils/timezone");
+        const normalizedCountry = String(signupEvent.country).toUpperCase().trim();
+        
+        if (normalizedCountry.length === 2) {
+          const timezone = getTimezoneFromCountry(normalizedCountry);
+          
+          console.log("💾 Backfilling country from signup_events:", normalizedCountry, timezone);
+          
+          const { error: updateError, data: updatedData } = await adminClient
+            .from("user_settings")
+            .upsert({
+              user_id: user.id,
+              country: normalizedCountry,
+              timezone: data.timezone || timezone,
+            }, {
+              onConflict: "user_id"
+            })
+            .select("country, timezone")
+            .single();
+          
+          if (!updateError && updatedData) {
+            console.log("✅ Backfilled country from signup_events:", normalizedCountry);
+            // Return updated settings
+            return { 
+              settings: {
+                ...data,
+                country: updatedData.country,
+                timezone: updatedData.timezone,
+              }
+            };
+          } else if (updateError) {
+            console.error("❌ Error backfilling country:", updateError);
+          }
+        }
+      }
+    } catch (backfillError) {
+      console.error("❌ Error backfilling country:", backfillError);
+      // Continue with existing data
+    }
   }
 
   return { settings: data };

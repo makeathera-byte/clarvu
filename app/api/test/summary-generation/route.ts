@@ -1,85 +1,53 @@
-import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { getUserOrThrow, unauthorizedResponse } from "@/lib/api/auth";
-import { successResponse, errorResponse } from "@/lib/api/responses";
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Test endpoint to manually trigger summary generation for the current user
- * Useful for testing and debugging
+ * Test endpoint to manually trigger summary generation for a specific user
+ * This helps debug timezone and time checking issues
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserOrThrow();
-    const supabase = await createClient();
-
-    // Get user's AI summary time setting
-    const { data: settings, error: settingsError } = await supabase
-      .from("user_settings")
-      .select("ai_summary_time, notifications_enabled")
-      .eq("user_id", user.id)
-      .single();
-
-    if (settingsError) {
-      return errorResponse(
-        `Error fetching settings: ${settingsError.message}`,
-        500
-      );
-    }
-
-    // Get today's logs
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const { data: logs, error: logsError } = await supabase
-      .from("activity_logs")
-      .select("id")
-      .eq("user_id", user.id)
-      .gte("start_time", today.toISOString())
-      .lt("start_time", tomorrow.toISOString());
-
-    if (logsError) {
-      return errorResponse(`Error fetching logs: ${logsError.message}`, 500);
-    }
-
-    // Check if summary already exists
-    const dateStr = today.toISOString().split("T")[0];
-    const { data: existingSummary } = await supabase
-      .from("daily_summaries")
-      .select("id, date, created_at")
-      .eq("user_id", user.id)
-      .eq("date", dateStr)
-      .single();
-
-    const currentTime = new Date();
-    const [targetHour, targetMinute] = (settings?.ai_summary_time || "22:00")
-      .split(":")
-      .map(Number);
+    const { userId } = await request.json();
     
-    const targetMinutes = targetHour * 60 + targetMinute;
-    const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
 
-    return successResponse({
-      user_id: user.id,
-      ai_summary_time: settings?.ai_summary_time || "22:00",
-      current_time: currentTime.toISOString(),
-      current_time_local: currentTime.toLocaleString(),
-      target_minutes: targetMinutes,
-      current_minutes: currentMinutes,
-      is_time_passed: currentMinutes >= targetMinutes,
-      logs_count: logs?.length || 0,
-      has_existing_summary: !!existingSummary,
-      existing_summary_date: existingSummary?.date || null,
-      can_generate: currentMinutes >= targetMinutes && !existingSummary && (logs?.length || 0) > 0,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      utc_offset: currentTime.getTimezoneOffset(),
+    const supabase = createAdminClient();
+    
+    // Get user settings
+    const { data: settings } = await supabase
+      .from("user_settings")
+      .select("ai_summary_time, timezone, notifications_enabled")
+      .eq("user_id", userId)
+      .single();
+
+    if (!settings) {
+      return NextResponse.json({ error: "User settings not found" }, { status: 404 });
+    }
+
+    // Call the Edge Function to generate summary
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const response = await fetch(`${supabaseUrl}/functions/v1/daily-summary`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+
+    const result = await response.json();
+
+    return NextResponse.json({
+      success: true,
+      userSettings: settings,
+      edgeFunctionResult: result,
     });
   } catch (error: any) {
-    if (error.message === "Unauthorized") {
-      return unauthorizedResponse();
-    }
-    return errorResponse(error.message || "Unknown error", 500);
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
   }
 }
-

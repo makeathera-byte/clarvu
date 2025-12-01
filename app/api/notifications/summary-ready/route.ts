@@ -68,15 +68,13 @@ export async function GET(request: NextRequest) {
       return errorResponse(error.message || "Failed to check summary", 500);
     }
 
-    // Check if summary was created/updated in the last 6 hours (likely just generated)
-    // This gives a wider window for checking, accounting for:
-    // - Daily summaries generated at user's ai_summary_time (could be late at night)
-    // - Weekly summaries generated on Monday mornings
-    // - Monthly summaries generated on the 2nd of the month
-    // - Frontend checks every 5 minutes, so 6 hours ensures we catch all notifications
+    // Check if summary was created/updated in the last 2 hours (likely just generated)
+    // Reduced from 6 hours to prevent showing notifications repeatedly
+    // Frontend checks every 5 minutes, so 2 hours is enough to catch new summaries
+    // while preventing duplicate notifications
     const isNew = summary
       ? new Date().getTime() - new Date(summary.updated_at || summary.created_at).getTime() <
-        6 * 60 * 60 * 1000 // 6 hours window
+        2 * 60 * 60 * 1000 // 2 hours window (reduced from 6 to prevent duplicates)
       : false;
 
     return successResponse({

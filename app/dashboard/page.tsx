@@ -15,6 +15,8 @@ import { getUserDisplayName } from "@/lib/utils/user";
 import { calculateDurationMinutes } from "@/lib/utils/time";
 import { getBusinessType, inferBusinessType } from "@/lib/utils/categories";
 import { SummaryReadyNotification } from "@/components/notifications/SummaryReadyNotification";
+import { NotificationPermissionPrompt } from "@/components/notifications/NotificationPermissionPrompt";
+import { NotificationBanner } from "@/components/notifications/NotificationBanner";
 import type { ActivityLog } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -49,12 +51,16 @@ export default async function DashboardPage() {
 
   const todayContextSwitches = Math.max(0, logs.length - 1);
 
-  // Fetch yesterday's logs for comparison
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  yesterday.setHours(0, 0, 0, 0);
-  const yesterdayEnd = new Date(yesterday);
-  yesterdayEnd.setDate(yesterdayEnd.getDate() + 1);
+  // Get user's timezone for yesterday calculation
+  const { data: userSettings } = await supabase
+    .from("user_settings")
+    .select("timezone")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  
+  const userTimezone = userSettings?.timezone || "UTC";
+  const { getYesterdayRangeUTC } = await import("@/lib/utils/date-timezone");
+  const { start: yesterdayStart, end: yesterdayEnd } = getYesterdayRangeUTC(userTimezone);
 
   const { data: yesterdayLogs } = await supabase
     .from("activity_logs")
@@ -69,7 +75,7 @@ export default async function DashboardPage() {
       )
     `)
     .eq("user_id", user.id)
-    .gte("start_time", yesterday.toISOString())
+    .gte("start_time", yesterdayStart.toISOString())
     .lt("start_time", yesterdayEnd.toISOString());
 
   const yesterdayRevenueMinutes = (yesterdayLogs || []).reduce((total: number, log: ActivityLog) => {
@@ -103,6 +109,7 @@ export default async function DashboardPage() {
 
   return (
     <>
+      <NotificationPermissionPrompt />
       <NotificationSystem
         initialSettings={{
           notifications_enabled: settings.notifications_enabled ?? true,
@@ -123,6 +130,9 @@ export default async function DashboardPage() {
             Hello, <span className="font-medium text-foreground">{getUserDisplayName(user)}</span>
           </p>
         </div>
+
+        {/* Notification Banner */}
+        <NotificationBanner />
 
         {/* Show notification if summary is ready */}
         {summariesResult.daily && (

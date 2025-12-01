@@ -6,6 +6,9 @@ import { ReminderSettingsForm } from "@/components/settings/ReminderSettingsForm
 import { AISummarySettingsForm } from "@/components/settings/AISummarySettingsForm";
 import { CategoryManager } from "@/components/settings/CategoryManager";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
+import { NotificationPermissionBanner } from "@/components/settings/NotificationPermissionBanner";
+import { isAdminEmail } from "@/lib/utils/admin";
+import { AdminPortalButton } from "@/components/settings/AdminPortalButton";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -18,6 +21,7 @@ export default async function SettingsPage() {
   }
 
   const { settings } = await getUserSettings();
+  const isAdmin = isAdminEmail(user.email);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
@@ -31,6 +35,18 @@ export default async function SettingsPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Admin Portal Button (Admin Only) */}
+        {isAdmin && (
+          <div className="animate-fade-in" style={{ animationDelay: "0.01s" }}>
+            <AdminPortalButton />
+          </div>
+        )}
+
+        {/* Notification Permission Banner */}
+        <div className="animate-fade-in" style={{ animationDelay: "0.02s" }}>
+          <NotificationPermissionBanner />
+        </div>
+
         {/* Theme Preference */}
         <div className="animate-fade-in" style={{ animationDelay: "0.05s" }}>
           <ThemeSelector initialTheme={settings?.theme || "system"} />
@@ -58,7 +74,10 @@ export default async function SettingsPage() {
         
         {/* AI Summary Settings (MARK 11) */}
         <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <AISummarySettingsForm initialTime={settings?.ai_summary_time || null} />
+          <AISummarySettingsForm 
+            initialTime={settings?.ai_summary_time || null}
+            initialCountry={settings?.country || null}
+          />
         </div>
         
         <div className="animate-fade-in" style={{ animationDelay: "0.25s" }}>

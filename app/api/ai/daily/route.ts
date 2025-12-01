@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { validateServiceRole, forbiddenResponse } from "@/lib/api/auth";
 import { successResponse, errorResponse, serverErrorResponse } from "@/lib/api/responses";
 import { dailySummarySchema } from "@/lib/api/validation";
+import { logEvent } from "@/lib/analytics/logEvent";
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,6 +59,32 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Error saving daily summary:", error);
       return errorResponse(error.message || "Failed to save daily summary", 500);
+    }
+
+    // Log summary generation event
+    try {
+      await logEvent(user_id, "summary_generated");
+      console.log("✅ Logged summary_generated event (daily) for user:", user_id);
+    } catch (logError) {
+      console.error("❌ Error logging summary generation:", logError);
+      // Don't fail the request if logging fails
+    }
+
+    // Send notification if enabled
+    try {
+      const { data: settings } = await supabase
+        .from("user_settings")
+        .select("notifications_enabled")
+        .eq("user_id", user_id)
+        .single();
+
+      if (settings?.notifications_enabled) {
+        // Trigger notification via API
+        // The frontend will check for new summaries and show notification
+        console.log("✅ Summary generated - notification will be shown to user:", user_id);
+      }
+    } catch (notifError) {
+      console.error("Error checking notification settings:", notifError);
     }
 
     return successResponse(data, 201);

@@ -58,20 +58,18 @@ export function ReminderClient({
   const logsRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastReminderTimestampRef = useRef<number>(0);
 
-  // Request notification permission on mount
+  // Check notification permission on mount (don't auto-request)
   useEffect(() => {
     if ("Notification" in window) {
       const currentPermission = Notification.permission;
       setPermission(currentPermission);
 
-      if (currentPermission === "default") {
-        Notification.requestPermission().then((newPermission) => {
-          setPermission(newPermission);
-          if (newPermission === "denied") {
-            setShowBanner(true);
-          }
-        });
-      } else if (currentPermission === "denied") {
+      // Only show banner if permission is denied
+      // Don't auto-request permission - let user click the button
+      if (currentPermission === "denied") {
+        setShowBanner(true);
+      } else if (currentPermission === "default") {
+        // Show banner for default too, so user can enable
         setShowBanner(true);
       }
     }
@@ -331,11 +329,17 @@ export function ReminderClient({
 
   return (
     <>
-      {showBanner && permission === "denied" && (
+      {showBanner && (permission === "denied" || permission === "default") && (
         <InlineReminderBanner
           onEnable={() => {
-            setPermission(Notification.permission);
-            setShowBanner(false);
+            // Refresh permission status
+            if ("Notification" in window) {
+              const newPermission = Notification.permission;
+              setPermission(newPermission);
+              if (newPermission === "granted") {
+                setShowBanner(false);
+              }
+            }
           }}
           onDismiss={() => setShowBanner(false)}
         />

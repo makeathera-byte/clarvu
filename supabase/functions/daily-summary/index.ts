@@ -185,28 +185,53 @@ function calculateFocusScore(metrics: FocusMetrics): number {
 
 // Check if current time has reached or passed user's AI summary time
 // Returns true if we should generate summary NOW
-function isTimeForSummary(userTime: string | null, currentTime: Date): boolean {
+// Uses user's timezone to convert UTC time to their local time
+function isTimeForSummary(userTime: string | null, currentTimeUTC: Date, userTimezone: string = "UTC"): boolean {
   if (!userTime) {
     // Default to 22:00 (10 PM) if not set
     userTime = "22:00";
   }
 
-  const [targetHour, targetMinute] = userTime.split(":").map(Number);
-  const currentHour = currentTime.getHours();
-  const currentMinute = currentTime.getMinutes();
+  // Parse time - handle both "HH:mm" and "HH:mm:ss" formats
+  const timeParts = userTime.split(":");
+  const targetHour = parseInt(timeParts[0], 10);
+  const targetMinute = parseInt(timeParts[1] || "0", 10);
+
+  // Convert UTC time to user's local timezone using Intl.DateTimeFormat
+  let currentHour: number;
+  let currentMinute: number;
+  
+  try {
+    // Use Intl.DateTimeFormat to get the hour and minute in the user's timezone
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: userTimezone,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
+    });
+    
+    const parts = formatter.formatToParts(currentTimeUTC);
+    currentHour = parseInt(parts.find(p => p.type === "hour")?.value || "0", 10);
+    currentMinute = parseInt(parts.find(p => p.type === "minute")?.value || "0", 10);
+  } catch (error) {
+    console.error(`Error converting timezone ${userTimezone}, falling back to UTC:`, error);
+    // Fallback to UTC
+    currentHour = currentTimeUTC.getUTCHours();
+    currentMinute = currentTimeUTC.getUTCMinutes();
+  }
 
   // Convert to minutes since midnight for easier comparison
   const targetMinutes = targetHour * 60 + targetMinute;
   const currentMinutes = currentHour * 60 + currentMinute;
 
   // Check if we're past the target time today
-  // Allow a 60-minute window (since function runs hourly at :00, it will catch any time in that hour)
-  // If function runs at 22:00, it will catch users with ai_summary_time between 22:00-22:59
+  // Allow a 120-minute (2-hour) window since function runs hourly
+  // This ensures the hourly cron job catches all users' summary times
   const minutesSinceTarget = currentMinutes - targetMinutes;
   
-  // Generate if we're past the target time AND within 60 minutes of it
+  // Generate if we're past the target time AND within 120 minutes of it
   // This ensures the hourly cron job catches all users' summary times
-  return minutesSinceTarget >= 0 && minutesSinceTarget < 60;
+  return minutesSinceTarget >= 0 && minutesSinceTarget < 120;
 }
 
 Deno.serve(async (req) => {
@@ -242,10 +267,10 @@ Deno.serve(async (req) => {
     // Process each user
     for (const user of users.users) {
       try {
-        // Fetch user settings to get ai_summary_time
+        // Fetch user settings to get ai_summary_time and timezone
         const { data: settings } = await supabase
           .from("user_settings")
-          .select("ai_summary_time, notifications_enabled")
+          .select("ai_summary_time, notifications_enabled, timezone")
           .eq("user_id", user.id)
           .single();
 
@@ -276,8 +301,11 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Check if it's time for this user's summary
-        if (!isTimeForSummary(userSettings.ai_summary_time, currentTime)) {
+        // Get user's timezone (default to UTC if not set)
+        const userTimezone = settings?.timezone || "UTC";
+        
+        // Check if it's time for this user's summary (using their timezone)
+        if (!isTimeForSummary(userSettings.ai_summary_time, currentTime, userTimezone)) {
           // Not time yet - skip this user
           continue;
         }

@@ -131,6 +131,20 @@ CREATE TABLE IF NOT EXISTS monthly_summaries (
   UNIQUE(user_id, month)
 );
 
+-- ============================================================================
+-- STEP 4.5: Create Routine Summaries Table (for AI-generated routines)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS routine_summaries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  routine JSONB NOT NULL,
+  explanation TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, date)
+);
+
 -- Create indexes for summary tables
 CREATE INDEX IF NOT EXISTS idx_daily_summaries_user_id ON daily_summaries(user_id);
 CREATE INDEX IF NOT EXISTS idx_daily_summaries_date ON daily_summaries(date);
@@ -138,11 +152,14 @@ CREATE INDEX IF NOT EXISTS idx_weekly_summaries_user_id ON weekly_summaries(user
 CREATE INDEX IF NOT EXISTS idx_weekly_summaries_week_start ON weekly_summaries(week_start);
 CREATE INDEX IF NOT EXISTS idx_monthly_summaries_user_id ON monthly_summaries(user_id);
 CREATE INDEX IF NOT EXISTS idx_monthly_summaries_month ON monthly_summaries(month);
+CREATE INDEX IF NOT EXISTS idx_routine_summaries_user_date ON routine_summaries(user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_routine_summaries_user_created ON routine_summaries(user_id, created_at DESC);
 
 -- Enable RLS on summary tables
 ALTER TABLE daily_summaries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weekly_summaries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE monthly_summaries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE routine_summaries ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for daily_summaries
 DROP POLICY IF EXISTS "Users can view their own daily summaries" ON daily_summaries;
@@ -207,6 +224,23 @@ CREATE POLICY "Users can delete their own monthly summaries"
   ON monthly_summaries FOR DELETE
   USING (auth.uid() = user_id);
 
+-- RLS policies for routine_summaries
+DROP POLICY IF EXISTS "Users can view their own routine summaries" ON routine_summaries;
+CREATE POLICY "Users can view their own routine summaries"
+  ON routine_summaries FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own routine summaries" ON routine_summaries;
+CREATE POLICY "Users can insert their own routine summaries"
+  ON routine_summaries FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own routine summaries" ON routine_summaries;
+CREATE POLICY "Users can update their own routine summaries"
+  ON routine_summaries FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
 -- ============================================================================
 -- STEP 5: Create Helper Functions and Triggers
 -- ============================================================================
@@ -257,6 +291,21 @@ CREATE TRIGGER update_monthly_summaries_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+-- Create trigger for routine_summaries
+CREATE OR REPLACE FUNCTION update_routine_summaries_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_routine_summaries_updated_at ON routine_summaries;
+CREATE TRIGGER update_routine_summaries_updated_at
+  BEFORE UPDATE ON routine_summaries
+  FOR EACH ROW
+  EXECUTE FUNCTION update_routine_summaries_updated_at();
+
 -- ============================================================================
 -- VERIFICATION: Check if tables were created successfully
 -- ============================================================================
@@ -265,5 +314,5 @@ SELECT
   COUNT(*) as table_count
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
-AND table_name IN ('activity_logs', 'user_settings', 'daily_summaries', 'weekly_summaries', 'monthly_summaries');
+AND table_name IN ('activity_logs', 'user_settings', 'daily_summaries', 'weekly_summaries', 'monthly_summaries', 'routine_summaries');
 

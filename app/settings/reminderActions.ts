@@ -122,8 +122,30 @@ export async function updateAISummaryTime(time: string | null) {
   }
 
   // Validate time format (HH:mm)
-  if (time && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
-    return { error: "Invalid time format. Use HH:mm format." };
+  // Normalize the time string - remove any whitespace and ensure proper format
+  const normalizedTime = time?.trim();
+  
+  if (normalizedTime) {
+    // Check if it's in HH:mm format (with or without seconds)
+    const timeMatch = normalizedTime.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (!timeMatch) {
+      return { error: "Invalid time format. Use HH:mm format." };
+    }
+    
+    // Extract hours and minutes
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    
+    // Validate hours (0-23) and minutes (0-59)
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return { error: "Invalid time format. Use HH:mm format." };
+    }
+    
+    // Normalize to HH:mm format
+    const formattedTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    
+    // Use the normalized time
+    time = formattedTime;
   }
 
   // Check if settings exist

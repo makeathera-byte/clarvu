@@ -117,6 +117,13 @@ export function IntervalReminderClient({
       notification.onclick = () => {
         window.focus();
         
+        // Log reminder click event
+        fetch("/api/analytics/log-event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "reminder_clicked" }),
+        }).catch((err) => console.error("Error logging reminder click:", err));
+        
         // Trigger quick log modal
         const event = new CustomEvent("dayflow:openQuickLog", {
           detail: {

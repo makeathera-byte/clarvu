@@ -24,29 +24,54 @@ export async function createClient() {
     } as any;
   }
 
+  // Validate URL format
+  try {
+    const url = new URL(supabaseUrl);
+    if (!url.hostname.includes('supabase.co')) {
+      console.warn("⚠️ Supabase URL doesn't look correct:", supabaseUrl);
+    }
+  } catch (e) {
+    console.error("❌ Invalid Supabase URL format:", supabaseUrl);
+  }
+
   const cookieStore = await cookies();
 
-  return createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
+  try {
+    return createServerClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ Failed to create Supabase client:", error.message);
+    // Return mock client to prevent crashes
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null }, error: { message: "Supabase connection failed" } }),
       },
-    }
-  );
+      from: () => ({
+        select: () => ({ data: [], error: { message: "Supabase connection failed" } }),
+        insert: () => ({ select: () => ({ data: null, error: { message: "Supabase connection failed" } }) }),
+        update: () => ({ eq: () => ({ data: null, error: { message: "Supabase connection failed" } }) }),
+      }),
+    } as any;
+  }
 }
 

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { validateServiceRole, forbiddenResponse } from "@/lib/api/auth";
 import { successResponse, errorResponse, serverErrorResponse } from "@/lib/api/responses";
 import { monthlySummarySchema } from "@/lib/api/validation";
+import { logEvent } from "@/lib/analytics/logEvent";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,6 +56,15 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Error saving monthly summary:", error);
       return errorResponse(error.message || "Failed to save monthly summary", 500);
+    }
+
+    // Log summary generation event
+    try {
+      await logEvent(user_id, "summary_generated");
+      console.log("✅ Logged summary_generated event (monthly) for user:", user_id);
+    } catch (logError) {
+      console.error("❌ Error logging summary generation:", logError);
+      // Don't fail the request if logging fails
     }
 
     return successResponse(data, 201);

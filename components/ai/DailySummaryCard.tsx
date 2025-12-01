@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTimeForDisplay } from "@/lib/utils/time";
 import type { DailySummary } from "@/lib/types";
@@ -10,6 +11,26 @@ interface DailySummaryCardProps {
 }
 
 export function DailySummaryCard({ summary, aiSummaryTime = null }: DailySummaryCardProps) {
+  // Log summary opened event when summary is displayed
+  useEffect(() => {
+    if (summary) {
+      fetch("/api/analytics/log-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "summary_opened" }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            console.log("✅ Logged summary_opened event");
+          } else {
+            console.error("❌ Failed to log summary_opened:", data.error);
+          }
+        })
+        .catch((err) => console.error("❌ Error logging summary opened:", err));
+    }
+  }, [summary]);
+
   const getFocusScoreColor = (score: number | null) => {
     if (!score) return "text-muted-foreground";
     if (score >= 80) return "text-green-600 dark:text-green-400";

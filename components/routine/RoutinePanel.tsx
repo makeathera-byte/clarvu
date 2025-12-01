@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// LocalStorage key for routine backup
+const ROUTINE_STORAGE_KEY = "dayflow_routine_backup";
+
 interface RoutineBlock {
   type: string;
   start: string;
@@ -34,19 +37,85 @@ interface RoutinePanelProps {
 }
 
 export function RoutinePanel({ routineData: initialRoutineData }: RoutinePanelProps) {
-  const [routineData, setRoutineData] = useState<RoutineResponse | null>(initialRoutineData);
+  // Try to load from localStorage first as backup
+  const getStoredRoutine = (): RoutineResponse | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = localStorage.getItem(ROUTINE_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Check if it's from today
+        const today = new Date().toISOString().split("T")[0];
+        if (parsed.date === today && parsed.routine) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn("Error reading from localStorage:", e);
+    }
+    return null;
+  };
+
+  const storeRoutine = (routine: RoutineResponse) => {
+    if (typeof window === "undefined") return;
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify({
+        ...routine,
+        date: today,
+        storedAt: new Date().toISOString(),
+      }));
+    } catch (e) {
+      console.warn("Error saving to localStorage:", e);
+    }
+  };
+
+  // Initialize with stored routine if no initial data
+  const storedRoutine = getStoredRoutine();
+  const [routineData, setRoutineData] = useState<RoutineResponse | null>(
+    initialRoutineData || storedRoutine
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRoutine = async (showLoading = true) => {
+  // Fetch routine on mount if not provided or if it doesn't have enough data
+  useEffect(() => {
+    // Check if we have valid routine data
+    const hasValidRoutine = routineData && 
+                           routineData.hasEnoughData && 
+                           routineData.routine &&
+                           (routineData.routine.morning?.length > 0 || 
+                            routineData.routine.afternoon?.length > 0 || 
+                            routineData.routine.evening?.length > 0);
+    
+    // Always fetch if we don't have valid routine data
+    // This handles cases where:
+    // 1. initialRoutineData is null
+    // 2. initialRoutineData doesn't have enough data
+    // 3. Server-side fetch failed due to schema cache issues
+    if (!hasValidRoutine) {
+      // Small delay to ensure component is mounted
+      const timer = setTimeout(() => {
+        fetchRoutine(false); // Fetch silently on mount
+      }, 100);
+      return () => clearTimeout(timer);
+    } else if (routineData) {
+      // If we have valid routine data, also store it as backup
+      storeRoutine(routineData);
+    }
+  }, []); // Only run on mount
+
+  const fetchRoutine = async (showLoading = true, isGenerate = false) => {
     if (showLoading) {
       setLoading(true);
     }
     setError(null);
 
     try {
+      // Use GET to fetch existing routine, POST to generate new one
+      const method = isGenerate ? "POST" : "GET";
       const response = await fetch("/api/routine", {
-        method: "POST",
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -64,9 +133,47 @@ export function RoutinePanel({ routineData: initialRoutineData }: RoutinePanelPr
       }
 
       if (data.success && data.data) {
-        setRoutineData(data.data);
+        // If we have routine data with enough data, set it
+        if (data.data.hasEnoughData && data.data.routine) {
+          setRoutineData(data.data);
+          // Store in localStorage as backup
+          storeRoutine(data.data);
+          // Clear any previous errors
+          setError(null);
+          
+          // If this was a generation, log that it was saved
+          if (isGenerate) {
+            if (data.data.saved) {
+              console.log("✅ Routine generated and saved successfully");
+              // Force a refresh after a short delay to ensure it's loaded from database
+              setTimeout(() => {
+                fetchRoutine(false, false); // Fetch (not generate) to get from database
+              }, 1000);
+            } else {
+              console.warn("⚠️ Routine generated but may not have been saved to database - using localStorage backup");
+              // Store in localStorage as backup since database save may have failed
+              storeRoutine(data.data);
+            }
+          }
+        } else if (isGenerate) {
+          // If generating and got no data, show error
+          setError(data.data?.message || "Failed to generate routine. Please try again.");
+        } else {
+          // If fetching (not generating) and no data, only set to null if we don't have existing data
+          // This prevents clearing a routine that was loaded from server but client fetch failed
+          if (!routineData || !routineData.hasEnoughData) {
+            setRoutineData(null);
+          }
+        }
       } else {
-        setError("Failed to generate routine. Please try again.");
+        if (isGenerate) {
+          setError("Failed to generate routine. Please try again.");
+        } else {
+          // If fetching and no success, only clear if we don't have existing data
+          if (!routineData || !routineData.hasEnoughData) {
+            setRoutineData(null);
+          }
+        }
       }
     } catch (err: any) {
       console.error("Error generating routine:", err);
@@ -79,11 +186,11 @@ export function RoutinePanel({ routineData: initialRoutineData }: RoutinePanelPr
   };
 
   const handleGenerate = () => {
-    fetchRoutine(true);
+    fetchRoutine(true, true); // true = isGenerate
   };
 
   const handleRegenerate = () => {
-    fetchRoutine(true);
+    fetchRoutine(true, true); // true = isGenerate
   };
 
   if (!routineData || !routineData.hasEnoughData) {

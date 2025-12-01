@@ -15,19 +15,26 @@ export async function GET(request: NextRequest) {
     // Get Supabase client
     const supabase = await createClient();
 
-    // Get today's date range
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Get user's timezone from settings
+    const { data: settings } = await supabase
+      .from("user_settings")
+      .select("timezone")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const userTimezone = settings?.timezone || "UTC";
+    
+    // Get today's date range in user's timezone (converted to UTC for database query)
+    const { getTodayRangeUTC } = await import("@/lib/utils/date-timezone");
+    const { start, end } = getTodayRangeUTC(userTimezone);
 
     // Fetch today's logs
     const { data: logs, error: logsError } = await supabase
       .from("activity_logs")
       .select("id, activity, start_time, end_time, category_id, categories(name)")
       .eq("user_id", user.id)
-      .gte("start_time", today.toISOString())
-      .lt("start_time", tomorrow.toISOString())
+      .gte("start_time", start.toISOString())
+      .lt("start_time", end.toISOString())
       .order("start_time", { ascending: false });
 
     if (logsError) {

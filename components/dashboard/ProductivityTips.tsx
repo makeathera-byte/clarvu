@@ -34,6 +34,7 @@ export function ProductivityTips() {
       const cacheBuster = `?t=${Date.now()}`;
       const response = await fetch(`/api/productivity-tips${cacheBuster}`, {
         cache: 'no-store',
+        credentials: 'include', // Include cookies for authentication
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -42,7 +43,12 @@ export function ProductivityTips() {
       });
       
       if (!response.ok) {
-        // If the API fails, use default tips
+        // If unauthorized, silently use fallback tips (user might not be logged in)
+        if (response.status === 401) {
+          console.log('[ProductivityTips] Unauthorized - using fallback tips');
+          throw new Error("Unauthorized");
+        }
+        // For other errors, use default tips
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `API returned ${response.status}`);
       }
@@ -89,7 +95,10 @@ export function ProductivityTips() {
         }, 8000);
       }
     } catch (err: any) {
-      console.error("Error fetching productivity tips:", err);
+      // Only log non-unauthorized errors to avoid console spam
+      if (err?.message !== "Unauthorized") {
+        console.error("Error fetching productivity tips:", err);
+      }
       
       // Use fallback tips if API fails
       const fallbackTips: ProductivityTip[] = [

@@ -20,73 +20,125 @@ export function SummaryCheckClient() {
   const [summaryDate, setSummaryDate] = useState<string>("");
 
   useEffect(() => {
+    // Track which summaries we've already notified about in this session
+    const notifiedSummaries = new Set<string>();
+    
     // Check for new summaries every 5 minutes
     const checkForNewSummary = async () => {
       try {
         // Check daily summary
-        const dailyResponse = await fetch("/api/notifications/summary-ready?type=daily");
+        const dailyResponse = await fetch("/api/notifications/summary-ready?type=daily", {
+          credentials: "include", // Include cookies for authentication
+        });
         if (dailyResponse.ok) {
           const dailyData = await dailyResponse.json();
           if (dailyData.success && dailyData.data?.isNew && dailyData.data?.hasSummary) {
             const notificationKey = `summary-check-daily-${dailyData.data.date}`;
-            if (!localStorage.getItem(notificationKey)) {
+            const storageKey = `notified-daily-${dailyData.data.date}`;
+            
+            // Check both localStorage and session memory to prevent duplicate notifications
+            const alreadyNotified = localStorage.getItem(notificationKey) || notifiedSummaries.has(storageKey);
+            
+            if (!alreadyNotified) {
               setShowNotification(true);
               setSummaryType("daily");
               setSummaryDate(dailyData.data.date);
               localStorage.setItem(notificationKey, "shown");
+              localStorage.setItem(storageKey, Date.now().toString());
+              notifiedSummaries.add(storageKey);
               showBrowserNotification("Daily", dailyData.data.date);
-              return;
+              return; // Only show one notification at a time
             }
           }
+        } else if (dailyResponse.status === 401) {
+          // User not authenticated - silently skip (they'll need to log in)
+          return;
         }
 
         // Check weekly summary
-        const weeklyResponse = await fetch("/api/notifications/summary-ready?type=weekly");
+        const weeklyResponse = await fetch("/api/notifications/summary-ready?type=weekly", {
+          credentials: "include", // Include cookies for authentication
+        });
         if (weeklyResponse.ok) {
           const weeklyData = await weeklyResponse.json();
           if (weeklyData.success && weeklyData.data?.isNew && weeklyData.data?.hasSummary) {
             const notificationKey = `summary-check-weekly-${weeklyData.data.date}`;
-            if (!localStorage.getItem(notificationKey)) {
+            const storageKey = `notified-weekly-${weeklyData.data.date}`;
+            
+            const alreadyNotified = localStorage.getItem(notificationKey) || notifiedSummaries.has(storageKey);
+            
+            if (!alreadyNotified) {
               setShowNotification(true);
               setSummaryType("weekly");
               setSummaryDate(weeklyData.data.date);
               localStorage.setItem(notificationKey, "shown");
+              localStorage.setItem(storageKey, Date.now().toString());
+              notifiedSummaries.add(storageKey);
               showBrowserNotification("Weekly", weeklyData.data.date);
               return;
             }
           }
+        } else if (weeklyResponse.status === 401) {
+          // User not authenticated - silently skip
+          return;
         }
 
         // Check monthly summary
-        const monthlyResponse = await fetch("/api/notifications/summary-ready?type=monthly");
+        const monthlyResponse = await fetch("/api/notifications/summary-ready?type=monthly", {
+          credentials: "include", // Include cookies for authentication
+        });
         if (monthlyResponse.ok) {
           const monthlyData = await monthlyResponse.json();
           if (monthlyData.success && monthlyData.data?.isNew && monthlyData.data?.hasSummary) {
             const notificationKey = `summary-check-monthly-${monthlyData.data.date}`;
-            if (!localStorage.getItem(notificationKey)) {
+            const storageKey = `notified-monthly-${monthlyData.data.date}`;
+            
+            const alreadyNotified = localStorage.getItem(notificationKey) || notifiedSummaries.has(storageKey);
+            
+            if (!alreadyNotified) {
               setShowNotification(true);
               setSummaryType("monthly");
               setSummaryDate(monthlyData.data.date);
               localStorage.setItem(notificationKey, "shown");
+              localStorage.setItem(storageKey, Date.now().toString());
+              notifiedSummaries.add(storageKey);
               showBrowserNotification("Monthly", monthlyData.data.date);
               return;
             }
           }
+        } else if (monthlyResponse.status === 401) {
+          // User not authenticated - silently skip
+          return;
         }
       } catch (error) {
-        // Silently fail - don't spam errors
-        console.error("Error checking for new summary:", error);
+        // Silently fail - don't spam errors (network issues, etc.)
+        // Only log if it's not a 401 (which is expected when not logged in)
+        if (error instanceof Error && !error.message.includes("401")) {
+          console.error("Error checking for new summary:", error);
+        }
       }
     };
 
     const showBrowserNotification = (type: string, date: string) => {
       if ("Notification" in window && Notification.permission === "granted") {
         try {
+          // Use a unique tag per summary to prevent duplicate notifications
+          const notificationTag = `ai-summary-ready-${type.toLowerCase()}-${date}`;
+          
+          // Check if we've already shown a notification with this tag
+          const notificationKey = `browser-notification-${notificationTag}`;
+          if (localStorage.getItem(notificationKey)) {
+            return; // Already shown this notification
+          }
+          
           const notification = new Notification(`DayFlow ${type} Summary Ready!`, {
             body: `Your ${type.toLowerCase()} insights are waiting for you on the dashboard.`,
             icon: "/favicon.ico",
-            tag: `ai-summary-ready-${type.toLowerCase()}`,
+            tag: notificationTag, // Unique tag prevents browser from showing duplicates
           });
+
+          // Mark as shown
+          localStorage.setItem(notificationKey, Date.now().toString());
 
           notification.onclick = () => {
             window.focus();

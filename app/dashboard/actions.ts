@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getTodayRangeUTC } from "@/lib/utils/date-timezone";
 
 export async function startActivity(activity: string, categoryId: string) {
   const supabase = await createClient();
@@ -84,10 +85,17 @@ export async function getTodayLogs() {
     return { logs: [], error: "Unauthorized" };
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Get user's timezone from settings
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("timezone")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const userTimezone = settings?.timezone || "UTC";
+  
+  // Get today's range in user's timezone (converted to UTC for database query)
+  const { start, end } = getTodayRangeUTC(userTimezone);
 
   const { data, error } = await supabase
     .from("activity_logs")
@@ -101,8 +109,8 @@ export async function getTodayLogs() {
       )
     `)
     .eq("user_id", user.id)
-    .gte("start_time", today.toISOString())
-    .lt("start_time", tomorrow.toISOString())
+    .gte("start_time", start.toISOString())
+    .lt("start_time", end.toISOString())
     .order("start_time", { ascending: false });
 
   if (error) {
@@ -136,11 +144,20 @@ export async function getWeeklyLogs() {
     return { logs: [], error: "Unauthorized" };
   }
 
-  // Get logs from the past 7 days
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - 7);
+  // Get user's timezone from settings
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("timezone")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const userTimezone = settings?.timezone || "UTC";
+  
+  // Get today's start in user's timezone
+  const { start: todayStart } = getTodayRangeUTC(userTimezone);
+  
+  // Get logs from the past 7 days (using timezone-aware dates)
+  const weekStart = new Date(todayStart.getTime() - (7 * 24 * 60 * 60 * 1000));
 
   const { data, error } = await supabase
     .from("activity_logs")
@@ -155,7 +172,7 @@ export async function getWeeklyLogs() {
     `)
     .eq("user_id", user.id)
     .gte("start_time", weekStart.toISOString())
-    .lt("start_time", today.toISOString())
+    .lt("start_time", todayStart.toISOString())
     .order("start_time", { ascending: true });
 
   if (error) {

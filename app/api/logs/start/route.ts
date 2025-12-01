@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserOrThrow, unauthorizedResponse } from "@/lib/api/auth";
 import { successResponse, errorResponse, serverErrorResponse } from "@/lib/api/responses";
 import { startLogSchema } from "@/lib/api/validation";
+import { logEvent } from "@/lib/analytics/logEvent";
 
 /**
  * Round a date to the nearest 30-minute block
@@ -60,6 +61,13 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Error creating activity log:", error);
       return errorResponse(error.message || "Failed to create activity log", 500);
+    }
+
+    // Log usage event
+    try {
+      await logEvent(user.id, "log_created");
+    } catch (logError) {
+      console.error("Error logging event:", logError);
     }
 
     return successResponse(data, 201);
