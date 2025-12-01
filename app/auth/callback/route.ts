@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   // Handle different Supabase email verification flows
   if (code) {
-    // Email confirmation uses code exchange
+    // Email confirmation uses code exchange (primary method for email verification)
     console.log("📧 Using code exchange for email confirmation");
     const { error: exchangeError, data: exchangeData } = await supabase.auth.exchangeCodeForSession(code);
     error = exchangeError;
@@ -66,16 +66,9 @@ export async function GET(request: NextRequest) {
     });
     error = verifyError;
     data = verifyData;
-  } else if (token && type) {
-    // OTP verification with token
-    console.log("🔐 Using token verification");
-    const { error: verifyError, data: verifyData } = await supabase.auth.verifyOtp({
-      type: type as any,
-      token,
-    });
-    error = verifyError;
-    data = verifyData;
   } else {
+    // Token-based verification requires email, which we don't have in the URL
+    // For email verification, we should use code exchange or token_hash
     console.error("❌ No valid verification parameters provided");
     const redirectUrl = new URL("/auth/login", requestUrl.origin);
     redirectUrl.searchParams.set("error", "verification_failed");
