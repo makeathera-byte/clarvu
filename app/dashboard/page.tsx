@@ -17,6 +17,8 @@ import { getBusinessType, inferBusinessType } from "@/lib/utils/categories";
 import { SummaryReadyNotification } from "@/components/notifications/SummaryReadyNotification";
 import { NotificationPermissionPrompt } from "@/components/notifications/NotificationPermissionPrompt";
 import { NotificationBanner } from "@/components/notifications/NotificationBanner";
+import { MidnightRefresh } from "@/components/dashboard/MidnightRefresh";
+import { CountryNotification } from "@/components/dashboard/CountryNotification";
 import type { ActivityLog } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -51,14 +53,15 @@ export default async function DashboardPage() {
 
   const todayContextSwitches = Math.max(0, logs.length - 1);
 
-  // Get user's timezone for yesterday calculation
+  // Get user's timezone and country for yesterday calculation
   const { data: userSettings } = await supabase
     .from("user_settings")
-    .select("timezone")
+    .select("timezone, country")
     .eq("user_id", user.id)
     .maybeSingle();
   
   const userTimezone = userSettings?.timezone || "UTC";
+  const userCountry = userSettings?.country || null;
   const { getYesterdayRangeUTC } = await import("@/lib/utils/date-timezone");
   const { start: yesterdayStart, end: yesterdayEnd } = getYesterdayRangeUTC(userTimezone);
 
@@ -109,6 +112,7 @@ export default async function DashboardPage() {
 
   return (
     <>
+      <MidnightRefresh timezone={userTimezone} />
       <NotificationPermissionPrompt />
       <NotificationSystem
         initialSettings={{
@@ -133,6 +137,9 @@ export default async function DashboardPage() {
 
         {/* Notification Banner */}
         <NotificationBanner />
+
+        {/* Show notification if country is not selected */}
+        <CountryNotification currentCountry={userCountry} />
 
         {/* Show notification if summary is ready */}
         {summariesResult.daily && (

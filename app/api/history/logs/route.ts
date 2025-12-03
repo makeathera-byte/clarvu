@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUserOrThrow } from "@/lib/api/auth";
 
 /**
  * GET /api/history/logs?start=ISO_DATE&end=ISO_DATE
  * Fetch activity logs for a date range
+ * Note: start and end should be ISO date strings (UTC timestamps)
  */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const user = await getUserOrThrow();
 
     const searchParams = request.nextUrl.searchParams;
     const startDate = searchParams.get("start");
@@ -24,6 +20,18 @@ export async function GET(request: NextRequest) {
     if (!startDate || !endDate) {
       return NextResponse.json(
         { error: "start and end date parameters are required" },
+        { status: 400 }
+      );
+    }
+
+    // The dates should already be in UTC ISO format from the client
+    // But we'll ensure they're properly formatted
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid date format. Use ISO date strings." },
         { status: 400 }
       );
     }
@@ -48,8 +56,8 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq("user_id", user.id)
-      .gte("start_time", startDate)
-      .lte("start_time", endDate)
+      .gte("start_time", start.toISOString())
+      .lte("start_time", end.toISOString())
       .order("start_time", { ascending: false });
 
     if (error) {
@@ -65,6 +73,9 @@ export async function GET(request: NextRequest) {
       count: data?.length || 0,
     });
   } catch (error: any) {
+    if (error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Error in /api/history/logs:", error);
     return NextResponse.json(
       { error: "Internal server error", details: error.message },

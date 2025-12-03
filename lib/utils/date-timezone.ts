@@ -130,3 +130,80 @@ export function getYesterdayRangeUTC(timezone: string = "UTC") {
     end: yesterdayEnd,
   };
 }
+
+/**
+ * Get the start of a specific date in the user's timezone, converted to UTC
+ * @param date - Date string in YYYY-MM-DD format
+ * @param timezone - IANA timezone string (e.g., "America/New_York")
+ * @returns Date object representing midnight of the specified date in the user's timezone (as UTC)
+ */
+export function getDateStartUTC(date: string, timezone: string = "UTC"): Date {
+  if (timezone === "UTC") {
+    const [year, month, day] = date.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  }
+
+  const [year, month, day] = date.split("-").map(Number);
+  
+  const tzFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  
+  // Start with UTC midnight for the date
+  let candidate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  
+  // Iteratively adjust until we find the UTC time that shows as midnight in the timezone
+  for (let i = 0; i < 48; i++) {
+    const parts = tzFormatter.formatToParts(candidate);
+    const tzYear = parseInt(parts.find(p => p.type === "year")?.value || "0");
+    const tzMonth = parseInt(parts.find(p => p.type === "month")?.value || "0");
+    const tzDay = parseInt(parts.find(p => p.type === "day")?.value || "0");
+    const tzHour = parseInt(parts.find(p => p.type === "hour")?.value || "0");
+    const tzMinute = parseInt(parts.find(p => p.type === "minute")?.value || "0");
+    
+    // Check if we've found midnight on the correct date
+    if (tzYear === year && tzMonth === month && tzDay === day && tzHour === 0 && tzMinute === 0) {
+      return candidate;
+    }
+    
+    // Calculate adjustment needed
+    let hourAdjust = -tzHour;
+    let dayAdjust = 0;
+    
+    if (tzYear < year || (tzYear === year && tzMonth < month) || (tzYear === year && tzMonth === month && tzDay < day)) {
+      dayAdjust = 1; // Need to go forward a day
+    } else if (tzYear > year || (tzYear === year && tzMonth > month) || (tzYear === year && tzMonth === month && tzDay > day)) {
+      dayAdjust = -1; // Need to go back a day
+    }
+    
+    // Adjust candidate
+    candidate = new Date(
+      candidate.getTime() + (hourAdjust * 60 * 60 * 1000) + (dayAdjust * 24 * 60 * 60 * 1000)
+    );
+  }
+  
+  // Fallback: if iteration fails, return UTC midnight (shouldn't happen, but safety)
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+}
+
+/**
+ * Get the date range for a specific date in the user's timezone, converted to UTC
+ * @param date - Date string in YYYY-MM-DD format
+ * @param timezone - IANA timezone string
+ * @returns Object with start and end of the specified date in UTC
+ */
+export function getDateRangeUTC(date: string, timezone: string = "UTC") {
+  const start = getDateStartUTC(date, timezone);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  
+  return {
+    start,
+    end,
+  };
+}
