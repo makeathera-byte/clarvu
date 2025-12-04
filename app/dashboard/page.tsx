@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { redirect } from "next/navigation";
 import { getTodayLogs, getWeeklyLogs } from "./actions";
-import { ActivityInput } from "@/components/activity/ActivityInput";
 import { Timeline } from "@/components/activity/Timeline";
 import { NotificationSystem } from "@/components/dashboard/NotificationSystem";
 import { ProductivityTips } from "@/components/dashboard/ProductivityTips";
@@ -19,6 +18,7 @@ import { NotificationPermissionPrompt } from "@/components/notifications/Notific
 import { NotificationBanner } from "@/components/notifications/NotificationBanner";
 import { MidnightRefresh } from "@/components/dashboard/MidnightRefresh";
 import { CountryNotification } from "@/components/dashboard/CountryNotification";
+import { TasksSection } from "@/components/dashboard/TasksSection";
 import type { ActivityLog } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -146,6 +146,9 @@ export default async function DashboardPage() {
           <SummaryReadyNotification summaryDate={summariesResult.daily.date} />
         )}
 
+        {/* Tasks Section - Create Task Banner and Today's Tasks */}
+        <TasksSection initialTasks={logs.filter((log: ActivityLog) => log.status && (log.status === "pending" || log.status === "in_progress" || log.status === "completed" || log.status === "scheduled"))} />
+
         {hasDatabaseError && (
           <Card className="mb-6 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 animate-fade-in">
             <CardContent className="p-6">
@@ -189,24 +192,9 @@ export default async function DashboardPage() {
           </Card>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Left Column: Activity Input + Productivity Tips */}
-          <div className="space-y-6">
-            {/* Activity Input */}
-            <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-              <ActivityInput />
-            </div>
-
-            {/* Productivity Tips */}
-            <div className="animate-fade-in" style={{ animationDelay: "0.15s" }}>
-              <ProductivityTips />
-            </div>
-          </div>
-
-          {/* Right Column: Timeline */}
-          <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            <Timeline logs={logs || []} />
-          </div>
+        {/* Productivity Tips */}
+        <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
+          <ProductivityTips />
         </div>
 
         {/* AI Summary Tabs with Charts */}
