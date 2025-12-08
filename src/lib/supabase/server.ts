@@ -11,8 +11,18 @@ export async function createClient() {
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseAnonKey) {
-            const error = new Error('Missing Supabase environment variables. Please check your .env.local file.');
+            const error = new Error(
+                'Missing Supabase environment variables. ' +
+                'Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your Vercel environment variables. ' +
+                'Go to Vercel Dashboard > Your Project > Settings > Environment Variables to add them.'
+            );
             console.error('Supabase configuration error:', error.message);
+            console.error('Current env check:', {
+                hasUrl: !!supabaseUrl,
+                hasKey: !!supabaseAnonKey,
+                urlLength: supabaseUrl?.length || 0,
+                keyLength: supabaseAnonKey?.length || 0,
+            });
             throw error;
         }
 
