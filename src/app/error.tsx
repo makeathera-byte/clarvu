@@ -13,6 +13,16 @@ export default function Error({
     useEffect(() => {
         // Log the error to an error reporting service
         console.error('Application error:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Error digest:', error.digest);
+        
+        // Check if it's a Supabase configuration error
+        if (error.message?.includes('Supabase') || error.message?.includes('NEXT_PUBLIC_SUPABASE')) {
+            console.error('⚠️ This appears to be a Supabase configuration error.');
+            console.error('Please check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in Vercel.');
+        }
     }, [error]);
 
     return (
@@ -26,6 +36,11 @@ export default function Error({
                 </p>
                 {error.digest && (
                     <p className="text-xs text-muted-foreground">Error ID: {error.digest}</p>
+                )}
+                {error.message?.includes('Supabase') && (
+                    <p className="text-xs text-muted-foreground bg-yellow-100 dark:bg-yellow-900 p-2 rounded">
+                        This may be a configuration issue. Check your environment variables.
+                    </p>
                 )}
                 <div className="flex gap-4 justify-center">
                     <Button onClick={reset} variant="default">
