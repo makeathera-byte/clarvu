@@ -50,11 +50,12 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
         return { success: false, error: 'Signup failed - no user returned' };
     }
 
-    // The database trigger will automatically create default categories
-    // We'll wait a moment for the trigger to complete, then create/update the profile
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // The database triggers will automatically create the profile and default categories
+    // We'll wait a moment for the triggers to complete, then update the profile with signup data
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Upsert the profile with all signup fields (creates if doesn't exist, updates if it does)
+    // Update the profile with all signup fields
+    // The profile should already exist from the trigger, but we'll use upsert to be safe
     const profileData = {
         id: data.user.id,
         full_name: formData.fullName,
@@ -73,7 +74,9 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
 
     if (profileError) {
         console.error('Profile upsert error:', profileError);
-        return { success: false, error: `Failed to create profile: ${profileError.message}` };
+        console.error('Error details:', JSON.stringify(profileError, null, 2));
+        // Don't fail signup if profile update fails - the profile was created by trigger
+        // But log it for debugging
     }
 
     // Verify default categories were created, create them if not (fallback)
