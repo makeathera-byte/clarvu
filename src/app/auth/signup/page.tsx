@@ -8,6 +8,7 @@ import { AuthInput } from '@/components/auth/AuthInput';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthThemeSelector } from '@/components/auth/AuthThemeSelector';
 import { EmailVerificationModal } from '@/components/auth/EmailVerificationModal';
+import { CountrySelector } from '@/components/auth/CountrySelector';
 import { Button } from '@/components/ui/button';
 import { User, Mail, ArrowRight, ArrowLeft, Globe } from 'lucide-react';
 import Link from 'next/link';
@@ -115,8 +116,10 @@ export default function SignupPage() {
                 setShowVerificationModal(true);
                 setIsLoading(false);
             }
-        } catch {
-            setErrors({ general: 'An unexpected error occurred' });
+        } catch (error) {
+            console.error('Signup error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+            setErrors({ general: errorMessage });
             setIsLoading(false);
         }
     }, [validateForm, fullName, email, password, selectedTheme, selectedCountry]);
@@ -233,36 +236,16 @@ export default function SignupPage() {
                                 <Globe className="w-4 h-4" />
                                 Country
                             </label>
-                            <select
-                                value={selectedCountry?.code || ''}
-                                onChange={handleCountryChange}
-                                className="w-full h-12 px-4 rounded-xl border-2 outline-none transition-all"
-                                style={{
-                                    backgroundColor: currentTheme.colors.muted,
-                                    color: currentTheme.colors.foreground,
-                                    borderColor: errors.country ? '#ef4444' : 'transparent',
+                            <CountrySelector
+                                countries={countries}
+                                selectedCountry={selectedCountry}
+                                onSelect={(country) => {
+                                    setSelectedCountry(country);
+                                    setErrors(prev => ({ ...prev, country: undefined }));
                                 }}
-                            >
-                                <option value="">Select your country</option>
-                                {countries.map((country) => (
-                                    <option key={country.code} value={country.code}>
-                                        {country.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {selectedCountry && (
-                                <p
-                                    className="text-xs"
-                                    style={{ color: currentTheme.colors.mutedForeground }}
-                                >
-                                    Timezone: {selectedCountry.timezone}
-                                </p>
-                            )}
-                            {errors.country && (
-                                <p className="text-xs" style={{ color: '#ef4444' }}>
-                                    {errors.country}
-                                </p>
-                            )}
+                                error={errors.country}
+                                currentTheme={currentTheme}
+                            />
                         </div>
 
                         {/* Theme Selection */}
