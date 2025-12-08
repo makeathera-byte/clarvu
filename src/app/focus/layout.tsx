@@ -4,6 +4,9 @@ import { getThemeById, defaultTheme } from '@/lib/theme/presets';
 import { ThemeProvider } from '@/lib/theme/ThemeContext';
 import { redirect } from 'next/navigation';
 
+// Force dynamic rendering since we use cookies for authentication
+export const dynamic = 'force-dynamic';
+
 interface FocusLayoutProps {
     children: ReactNode;
 }

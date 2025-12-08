@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getThemeById, defaultTheme } from '@/lib/theme/presets';
 import { ThemeProvider } from '@/lib/theme/ThemeContext';
 
+// Force dynamic rendering since we use cookies for authentication
+export const dynamic = 'force-dynamic';
+
 interface TimerLayoutProps {
     children: ReactNode;
 }

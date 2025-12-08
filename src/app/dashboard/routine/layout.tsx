@@ -6,6 +6,9 @@ import { BackgroundRenderer } from '@/components/theme/BackgroundRenderer';
 import { Navbar } from '@/components/layout/Navbar';
 import { redirect } from 'next/navigation';
 
+// Force dynamic rendering since we use cookies for authentication
+export const dynamic = 'force-dynamic';
+
 interface RoutineLayoutProps {
     children: ReactNode;
 }

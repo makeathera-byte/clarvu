@@ -5,6 +5,9 @@ import { ThemeProvider } from '@/lib/theme/ThemeContext';
 import { BackgroundRenderer } from '@/components/theme/BackgroundRenderer';
 import { Navbar } from '@/components/layout/Navbar';
 
+// Force dynamic rendering since we use cookies for authentication
+export const dynamic = 'force-dynamic';
+
 interface NotificationsLayoutProps {
     children: ReactNode;
 }

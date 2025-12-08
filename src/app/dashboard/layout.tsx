@@ -7,6 +7,9 @@ import { Navbar } from '@/components/layout/Navbar';
 import { FocusSoundPanel } from '@/components/focus/FocusSoundPanel';
 import { RealtimeProvider } from '@/components/realtime';
 
+// Force dynamic rendering since we use cookies for authentication
+export const dynamic = 'force-dynamic';
+
 interface DashboardLayoutProps {
     children: ReactNode;
 }
