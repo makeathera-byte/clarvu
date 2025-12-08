@@ -5,8 +5,7 @@ import type { Database } from './types';
 // Create server client for Server Components, Server Actions, and Route Handlers
 export async function createClient() {
     try {
-        const cookieStore = await cookies();
-
+        // Check environment variables first
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -24,6 +23,30 @@ export async function createClient() {
                 keyLength: supabaseAnonKey?.length || 0,
             });
             throw error;
+        }
+
+        // Try to get cookies - this might fail in some edge cases
+        let cookieStore;
+        try {
+            cookieStore = await cookies();
+        } catch (cookieError) {
+            console.error('Error accessing cookies:', cookieError);
+            // If cookies() fails, we can still create a client but it won't have session management
+            // This is a fallback for edge cases
+            return createServerClient<Database>(
+                supabaseUrl,
+                supabaseAnonKey,
+                {
+                    cookies: {
+                        getAll() {
+                            return [];
+                        },
+                        setAll() {
+                            // No-op if cookies aren't available
+                        },
+                    },
+                }
+            );
         }
 
         return createServerClient<Database>(
@@ -49,6 +72,7 @@ export async function createClient() {
         );
     } catch (error) {
         console.error('Error creating Supabase client:', error);
+        // Re-throw the error so calling code can handle it
         throw error;
     }
 }
