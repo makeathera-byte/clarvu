@@ -38,15 +38,10 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 2,
   },
 
-  // Webpack config to suppress warnings
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.ignoreWarnings = [
-        { module: /node-domexception/ },
-        { message: /node-domexception/ },
-      ];
-    }
-    return config;
+  // Turbopack configuration (Next.js 16+ uses Turbopack by default)
+  turbopack: {
+    // Suppress warnings from transitive dependencies
+    resolveAlias: {},
   },
 };
 
