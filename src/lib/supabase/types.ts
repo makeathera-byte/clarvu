@@ -14,6 +14,8 @@ export interface Profile {
     onboarding_complete: boolean;
     is_admin: boolean;
     last_login: string | null;
+    country: string | null;
+    timezone: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -102,6 +104,8 @@ export interface Database {
                     onboarding_complete?: boolean;
                     is_admin?: boolean;
                     last_login?: string | null;
+                    country?: string | null;
+                    timezone?: string | null;
                     updated_at?: string;
                 };
             };

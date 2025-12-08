@@ -172,7 +172,53 @@ export const themePresets: ThemePreset[] = [
 ];
 
 export const getThemeById = (id: string): ThemePreset | undefined => {
-    return themePresets.find((theme) => theme.id === id);
+    try {
+        return themePresets.find((theme) => theme.id === id);
+    } catch (error) {
+        console.error('Error getting theme by ID:', error);
+        return undefined;
+    }
 };
 
-export const defaultTheme = themePresets.find(t => t.id === 'minimal') || themePresets[0];
+// Safely get default theme
+function getDefaultThemeSafe(): ThemePreset {
+    try {
+        const minimal = themePresets.find(t => t.id === 'minimal');
+        if (minimal) return minimal;
+        if (themePresets.length > 0) return themePresets[0];
+        // Fallback theme if all else fails
+        return {
+            id: 'minimal',
+            name: 'Minimal',
+            description: 'Default theme',
+            wallpaper: '/wallpapers/minimal.jpg',
+            isDark: false,
+            colors: {
+                primary: '#18181b',
+                primaryForeground: '#fafafa',
+                accent: '#71717a',
+                accentForeground: '#fafafa',
+                background: '#ffffff',
+                foreground: '#18181b',
+                card: 'rgba(250, 250, 250, 0.9)',
+                cardForeground: '#18181b',
+                muted: '#f4f4f5',
+                mutedForeground: '#71717a',
+                border: 'rgba(0, 0, 0, 0.08)',
+            },
+            tiles: {
+                tile1: 'rgba(0, 0, 0, 0.03)',
+                tile2: 'rgba(0, 0, 0, 0.05)',
+                tile3: 'rgba(0, 0, 0, 0.04)',
+                tile4: 'rgba(0, 0, 0, 0.06)',
+                tile5: 'rgba(0, 0, 0, 0.02)',
+            },
+        };
+    } catch (error) {
+        console.error('Error getting default theme:', error);
+        // Return a minimal fallback
+        throw new Error('Failed to initialize default theme');
+    }
+}
+
+export const defaultTheme = getDefaultThemeSafe();

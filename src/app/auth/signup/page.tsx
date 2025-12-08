@@ -25,12 +25,31 @@ interface FormErrors {
 }
 
 export default function SignupPage() {
-    const { currentTheme, setTheme } = useTheme();
+    const themeContext = useTheme();
+    const currentTheme = themeContext?.currentTheme || {
+        id: 'minimal',
+        colors: {
+            primary: '#18181b',
+            primaryForeground: '#fafafa',
+            accent: '#71717a',
+            accentForeground: '#fafafa',
+            background: '#ffffff',
+            foreground: '#18181b',
+            card: 'rgba(250, 250, 250, 0.9)',
+            cardForeground: '#18181b',
+            muted: '#f4f4f5',
+            mutedForeground: '#71717a',
+            border: 'rgba(0, 0, 0, 0.08)',
+        },
+        isDark: false,
+    };
+    const setTheme = themeContext?.setTheme || (() => {});
+    
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-    const [selectedTheme, setSelectedTheme] = useState(currentTheme?.id || 'minimal');
+    const [selectedTheme, setSelectedTheme] = useState(currentTheme.id || 'minimal');
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
     const [showVerificationModal, setShowVerificationModal] = useState(false);
