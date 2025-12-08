@@ -19,20 +19,6 @@ export interface SignupResult {
 
 export async function signUpAction(formData: SignupFormData): Promise<SignupResult> {
     try {
-        // Runtime safety check for environment variables
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
-        }
-        if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
-        }
-
-        // Validate environment variables
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-            console.error('Missing Supabase environment variables');
-            return { success: false, error: 'Server configuration error. Please contact support.' };
-        }
-
         const supabase = await createClient();
 
         // Validate input
@@ -44,11 +30,19 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
             return { success: false, error: 'Password must be at least 6 characters' };
         }
 
+        // Get redirect URL from environment or use default
+        const redirectUrl = process.env.NEXT_PUBLIC_APP_URL 
+            ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`
+            : typeof window !== 'undefined' 
+                ? `${window.location.origin}/auth/login`
+                : '/auth/login';
+
         // Sign up the user
         const { data, error } = await supabase.auth.signUp({
             email: formData.email,
             password: formData.password,
             options: {
+                emailRedirectTo: redirectUrl,
                 data: {
                     full_name: formData.fullName,
                     theme_name: formData.themeName,

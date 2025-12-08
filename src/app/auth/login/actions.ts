@@ -15,20 +15,6 @@ export interface LoginResult {
 
 export async function loginAction(formData: LoginFormData): Promise<LoginResult> {
     try {
-        // Runtime safety check for environment variables
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
-        }
-        if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
-        }
-
-        // Validate environment variables
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-            console.error('Missing Supabase environment variables');
-            return { success: false, error: 'Server configuration error. Please contact support.' };
-        }
-
         const supabase = await createClient();
 
         // Validate input

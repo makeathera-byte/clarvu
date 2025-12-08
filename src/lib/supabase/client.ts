@@ -1,22 +1,31 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database } from './types';
 
-// Runtime safety check - if env vars are missing, use placeholders to prevent crashes
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+/**
+ * Client-side Supabase client for public reads only
+ * Uses NEXT_PUBLIC_ env vars which are exposed to the browser
+ */
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
+if (typeof window !== 'undefined') {
+    // Only log in browser
+    if (!supabaseUrl) {
+        console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
+    }
+    if (!supabaseAnonKey) {
+        console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    }
 }
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
-}
-
-export const supabase = createClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey
+// Use fallback values to prevent crashes, but operations will fail gracefully
+export const supabaseClient = createClient<Database>(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key'
 );
+
+// Legacy export for backward compatibility
+export const supabase = supabaseClient;
 
 // Re-export types for convenience
 export * from './types';

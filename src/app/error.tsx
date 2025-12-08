@@ -19,9 +19,9 @@ export default function Error({
         console.error('Error digest:', error.digest);
         
         // Check if it's a Supabase configuration error
-        if (error.message?.includes('Supabase') || error.message?.includes('NEXT_PUBLIC_SUPABASE')) {
+        if (error.message?.includes('Supabase') || error.message?.includes('SUPABASE')) {
             console.error('⚠️ This appears to be a Supabase configuration error.');
-            console.error('Please check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in Vercel.');
+            console.error('Please check VERCEL_ENV_VARS.md for required environment variables.');
         }
     }, [error]);
 

@@ -2,18 +2,34 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from './types';
 
-// Create server client for Server Components, Server Actions, and Route Handlers
+/**
+ * Server-side Supabase client for auth, inserts, and protected operations
+ * Uses non-public env vars (SUPABASE_URL, SUPABASE_ANON_KEY) for security
+ * Falls back to NEXT_PUBLIC_ vars if non-public vars are not set (for backward compatibility)
+ */
 export async function createClient() {
-    // Runtime safety check for environment variables
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // Use non-public env vars first, fallback to public for backward compatibility
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+    // Runtime safety check for environment variables
     if (!supabaseUrl) {
-        console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
+        console.error('❌ Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL)');
+        if (process.env.NODE_ENV === 'production') {
+            console.error('⚠️ PRODUCTION ERROR: Supabase URL is missing!');
+        }
     }
 
     if (!supabaseAnonKey) {
-        console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
+        console.error('❌ Missing SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)');
+        if (process.env.NODE_ENV === 'production') {
+            console.error('⚠️ PRODUCTION ERROR: Supabase anon key is missing!');
+        }
+    }
+
+    // Warn if using public vars on server in production
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
+        console.warn('⚠️ WARNING: Using NEXT_PUBLIC_SUPABASE_URL on server. Consider using SUPABASE_URL instead.');
     }
 
     // Helper to safely get cookies

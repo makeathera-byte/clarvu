@@ -7,15 +7,22 @@ export async function updateSession(request: NextRequest) {
             request,
         });
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        // Use non-public env vars first, fallback to public for backward compatibility
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
         // Runtime safety check
         if (!supabaseUrl) {
-            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL in middleware');
+            console.error('❌ Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) in middleware');
+            if (process.env.NODE_ENV === 'production') {
+                console.error('⚠️ PRODUCTION ERROR: Supabase URL is missing in middleware!');
+            }
         }
         if (!supabaseAnonKey) {
-            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY in middleware');
+            console.error('❌ Missing SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) in middleware');
+            if (process.env.NODE_ENV === 'production') {
+                console.error('⚠️ PRODUCTION ERROR: Supabase anon key is missing in middleware!');
+            }
         }
 
         if (!supabaseUrl || !supabaseAnonKey) {
