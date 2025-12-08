@@ -10,6 +10,14 @@ export async function updateSession(request: NextRequest) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+        // Runtime safety check
+        if (!supabaseUrl) {
+            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL in middleware');
+        }
+        if (!supabaseAnonKey) {
+            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY in middleware');
+        }
+
         if (!supabaseUrl || !supabaseAnonKey) {
             console.error('Missing Supabase environment variables in middleware');
             return supabaseResponse;

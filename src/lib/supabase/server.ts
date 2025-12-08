@@ -4,9 +4,17 @@ import type { Database } from './types';
 
 // Create server client for Server Components, Server Actions, and Route Handlers
 export async function createClient() {
-    // Check environment variables first - fail fast if missing
+    // Runtime safety check for environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl) {
+        console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
+    }
+
+    if (!supabaseAnonKey) {
+        console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    }
 
     if (!supabaseUrl || !supabaseAnonKey) {
         const error = new Error(

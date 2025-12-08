@@ -19,6 +19,14 @@ export interface SignupResult {
 
 export async function signUpAction(formData: SignupFormData): Promise<SignupResult> {
     try {
+        // Runtime safety check for environment variables
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
+        }
+        if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+            console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
+        }
+
         // Validate environment variables
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
             console.error('Missing Supabase environment variables');
