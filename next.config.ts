@@ -3,19 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
 
-  // Fix Vercel deployment: Externalize Supabase packages to avoid file tracing issues
-  serverExternalPackages: ['@supabase/ssr', '@supabase/supabase-js'],
-
-  // Set the root for file tracing to avoid middleware.js.nft.json issues
-  outputFileTracingRoot: undefined,
-
-  // Exclude Supabase packages from file tracing to avoid middleware.nft.json issues on Vercel
-  outputFileTracingExcludes: {
-    '*': [
-      'node_modules/@supabase/ssr/**',
-      'node_modules/@supabase/supabase-js/**',
-    ],
-  },
+  // Note: Removed serverExternalPackages for @supabase/ssr to ensure it's bundled
+  // Vercel needs these packages to be bundled, not externalized
 
   // Image optimization
   images: {
