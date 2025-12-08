@@ -30,14 +30,22 @@ export default function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-    const [selectedTheme, setSelectedTheme] = useState(currentTheme.id);
+    const [selectedTheme, setSelectedTheme] = useState(currentTheme?.id || 'minimal');
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
     const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [countriesList, setCountriesList] = useState<Country[]>([]);
+    const [mounted, setMounted] = useState(false);
+
+    // Mark as mounted to prevent hydration issues
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Load countries and auto-detect country on mount (client-side only)
     useEffect(() => {
+        if (!mounted) return;
+        
         // Dynamically import to avoid SSR issues
         import('@/lib/utils/countries').then(({ countries, getDefaultCountry }) => {
             setCountriesList(countries);
@@ -53,7 +61,7 @@ export default function SignupPage() {
         }).catch((error) => {
             console.error('Error loading countries:', error);
         });
-    }, []);
+    }, [mounted]);
 
     // Handle theme selection
     const handleThemeSelect = useCallback((themeId: string) => {
@@ -137,6 +145,18 @@ export default function SignupPage() {
             setIsLoading(false);
         }
     }, [validateForm, fullName, email, password, selectedTheme, selectedCountry]);
+
+    // Prevent rendering until mounted to avoid hydration issues
+    if (!mounted) {
+        return (
+            <div className="relative w-full max-w-lg flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-500">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>
