@@ -16,30 +16,36 @@ interface ProfileTheme {
 }
 
 export default async function FocusLayout({ children }: FocusLayoutProps) {
-    const supabase = await createClient();
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect('/auth/login');
-    }
-
-    // Default theme values
     let initialThemeId = defaultTheme.id;
 
-    // Load theme from profile
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('theme_name')
-        .eq('id', user.id)
-        .single<ProfileTheme>();
+    try {
+        const supabase = await createClient();
 
-    if (profile?.theme_name) {
-        const theme = getThemeById(profile.theme_name);
-        if (theme) {
-            initialThemeId = profile.theme_name;
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            redirect('/auth/login');
         }
+
+        // Load theme from profile
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('theme_name')
+            .eq('id', user.id)
+            .single<ProfileTheme>();
+
+        if (profile?.theme_name) {
+            const theme = getThemeById(profile.theme_name);
+            if (theme) {
+                initialThemeId = profile.theme_name;
+            }
+        }
+    } catch (error) {
+        console.error('Error in FocusLayout:', error);
+        // Use default theme if there's an error
+        // If client creation fails, we can't verify auth, so redirect to login
+        redirect('/auth/login');
     }
 
     return (

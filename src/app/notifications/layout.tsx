@@ -13,25 +13,30 @@ interface NotificationsLayoutProps {
 }
 
 export default async function NotificationsLayout({ children }: NotificationsLayoutProps) {
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-
     let initialThemeId = defaultTheme.id;
 
-    if (user) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('theme_name')
-            .eq('id', user.id)
-            .single<{ theme_name: string | null }>();
+    try {
+        const supabase = await createClient();
 
-        if (profile?.theme_name) {
-            const theme = getThemeById(profile.theme_name);
-            if (theme) {
-                initialThemeId = profile.theme_name;
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('theme_name')
+                .eq('id', user.id)
+                .single<{ theme_name: string | null }>();
+
+            if (profile?.theme_name) {
+                const theme = getThemeById(profile.theme_name);
+                if (theme) {
+                    initialThemeId = profile.theme_name;
+                }
             }
         }
+    } catch (error) {
+        console.error('Error in NotificationsLayout:', error);
+        // Use default theme if there's an error
     }
 
     return (

@@ -17,35 +17,40 @@ interface ProfileData {
 }
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
-    const supabase = await createClient();
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect('/auth/login');
-    }
-
-    // Load profile including admin check
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('theme_name, is_admin')
-        .eq('id', user.id)
-        .single() as { data: ProfileData | null };
-
-    // Check if user is admin
-    if (!profile?.is_admin) {
-        redirect('/dashboard');
-    }
-
-    // Default theme values
     let initialThemeId = defaultTheme.id;
 
-    if (profile?.theme_name) {
-        const theme = getThemeById(profile.theme_name);
-        if (theme) {
-            initialThemeId = profile.theme_name;
+    try {
+        const supabase = await createClient();
+
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            redirect('/auth/login');
         }
+
+        // Load profile including admin check
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('theme_name, is_admin')
+            .eq('id', user.id)
+            .single() as { data: ProfileData | null };
+
+        // Check if user is admin
+        if (!profile?.is_admin) {
+            redirect('/dashboard');
+        }
+
+        if (profile?.theme_name) {
+            const theme = getThemeById(profile.theme_name);
+            if (theme) {
+                initialThemeId = profile.theme_name;
+            }
+        }
+    } catch (error) {
+        console.error('Error in AdminLayout:', error);
+        // Use default theme if there's an error, but still redirect if needed
+        redirect('/auth/login');
     }
 
     return (

@@ -17,28 +17,32 @@ interface ProfileTheme {
 }
 
 export default async function SettingsIntegrationsLayout({ children }: SettingsLayoutProps) {
-    const supabase = await createClient();
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Default theme values
     let initialThemeId = defaultTheme.id;
 
-    // Load theme from profile if user is authenticated
-    if (user) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('theme_name')
-            .eq('id', user.id)
-            .single<ProfileTheme>();
+    try {
+        const supabase = await createClient();
 
-        if (profile?.theme_name) {
-            const theme = getThemeById(profile.theme_name);
-            if (theme) {
-                initialThemeId = profile.theme_name;
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // Load theme from profile if user is authenticated
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('theme_name')
+                .eq('id', user.id)
+                .single<ProfileTheme>();
+
+            if (profile?.theme_name) {
+                const theme = getThemeById(profile.theme_name);
+                if (theme) {
+                    initialThemeId = profile.theme_name;
+                }
             }
         }
+    } catch (error) {
+        console.error('Error in SettingsIntegrationsLayout:', error);
+        // Use default theme if there's an error
     }
 
     return (
