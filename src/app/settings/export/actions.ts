@@ -43,7 +43,7 @@ export async function exportTasksCSV(range: DateRange = 'all') {
 
     // Build CSV
     if (!data || data.length === 0) {
-        return { csv: 'No tasks found', filename: `dayflow_tasks_${range}.csv` };
+        return { csv: 'No tasks found', filename: `clarvu_tasks_${range}.csv` };
     }
 
     const headers = Object.keys(data[0]);
@@ -57,7 +57,7 @@ export async function exportTasksCSV(range: DateRange = 'all') {
         )
     ];
 
-    return { csv: rows.join('\n'), filename: `dayflow_tasks_${range}.csv` };
+    return { csv: rows.join('\n'), filename: `clarvu_tasks_${range}.csv` };
 }
 
 export async function exportTasksJSON() {
@@ -74,7 +74,7 @@ export async function exportTasksJSON() {
 
     if (error) return { error: error.message };
 
-    return { json: JSON.stringify(data, null, 2), filename: 'dayflow_tasks_all.json' };
+    return { json: JSON.stringify(data, null, 2), filename: 'clarvu_tasks_all.json' };
 }
 
 export async function exportCalendarCSV() {
@@ -92,7 +92,7 @@ export async function exportCalendarCSV() {
     if (error) return { error: error.message };
 
     if (!data || data.length === 0) {
-        return { csv: 'No calendar events found', filename: 'dayflow_calendar.csv' };
+        return { csv: 'No calendar events found', filename: 'clarvu_calendar.csv' };
     }
 
     const headers = Object.keys(data[0]);
@@ -106,7 +106,7 @@ export async function exportCalendarCSV() {
         )
     ];
 
-    return { csv: rows.join('\n'), filename: 'dayflow_calendar.csv' };
+    return { csv: rows.join('\n'), filename: 'clarvu_calendar.csv' };
 }
 
 export async function exportAnalyticsJSON() {
@@ -124,7 +124,7 @@ export async function exportAnalyticsJSON() {
 
     if (error) return { error: error.message };
 
-    return { json: JSON.stringify(data, null, 2), filename: 'dayflow_analytics.json' };
+    return { json: JSON.stringify(data, null, 2), filename: 'clarvu_analytics.json' };
 }
 
 export async function getProductivitySummary() {

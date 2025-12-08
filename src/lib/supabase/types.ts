@@ -1,4 +1,4 @@
-// Database types for DayFlow
+// Database types for Clarvu
 // Generated from Supabase schema
 
 export type CategoryType = 'business' | 'growth' | 'product' | 'admin' | 'learning' | 'personal' | 'routine' | 'waste';

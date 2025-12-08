@@ -66,13 +66,13 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
                                 background: `linear-gradient(135deg, ${currentTheme.colors.primary}, ${currentTheme.colors.accent})`,
                             }}
                         >
-                            <span className="text-sm font-bold text-white">D</span>
+                            <span className="text-sm font-bold text-white">C</span>
                         </div>
                         <span
                             className="font-semibold hidden sm:block"
                             style={{ color: currentTheme.colors.foreground }}
                         >
-                            DayFlow
+                            Clarvu
                         </span>
                     </Link>
 

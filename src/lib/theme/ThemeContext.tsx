@@ -22,8 +22,8 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'dayflow-theme';
-const CUSTOM_THEME_STORAGE_KEY = 'dayflow-custom-theme';
+const THEME_STORAGE_KEY = 'clarvu-theme';
+const CUSTOM_THEME_STORAGE_KEY = 'clarvu-custom-theme';
 
 interface ThemeProviderProps {
     children: ReactNode;

@@ -96,7 +96,7 @@ export default function ExportPage() {
             if (result.summary) {
                 // Generate simple text-based report (can be enhanced with jsPDF)
                 const report = `
-DAYFLOW PRODUCTIVITY SUMMARY
+CLARVU PRODUCTIVITY SUMMARY
 ============================
 Period: ${result.summary.period}
 Generated: ${new Date(result.summary.generatedAt).toLocaleString()}
@@ -118,7 +118,7 @@ Most Used Category: ${result.summary.topCategory}
 Most Common Activity: ${result.summary.topActivity}
         `.trim();
 
-                downloadTextFile('dayflow_summary.txt', report, 'text/plain');
+                downloadTextFile('clarvu_summary.txt', report, 'text/plain');
                 setStatus('summary', 'success');
             } else {
                 setStatus('summary', 'error');
@@ -185,7 +185,7 @@ Most Common Activity: ${result.summary.topActivity}
                         </div>
                         <h1 className="text-2xl font-bold" style={{ color: currentTheme.colors.foreground }}>Export Data</h1>
                     </div>
-                    <p style={{ color: currentTheme.colors.mutedForeground }}>Download your DayFlow data</p>
+                    <p style={{ color: currentTheme.colors.mutedForeground }}>Download your Clarvu data</p>
                 </motion.div>
 
                 {/* Quick Exports */}

@@ -133,7 +133,7 @@ export function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
                             color: currentTheme.colors.mutedForeground,
                         }}
                     >
-                        DayFlow Admin v1.0
+                        Clarvu Admin v1.0
                     </div>
                 )}
             </motion.aside>

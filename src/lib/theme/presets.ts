@@ -1,4 +1,4 @@
-// Theme presets for DayFlow
+// Theme presets for Clarvu
 // Each theme includes primary/accent colors, background wallpaper, and tile palette
 
 export interface ThemeColors {

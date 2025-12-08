@@ -11,6 +11,7 @@ import { EmailVerificationModal } from '@/components/auth/EmailVerificationModal
 import { Button } from '@/components/ui/button';
 import { User, Mail, ArrowRight, ArrowLeft, Globe } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { signUpAction } from './actions';
 import { countries, getDefaultCountry, type Country } from '@/lib/utils/countries';
 
@@ -137,7 +138,14 @@ export default function SignupPage() {
                             boxShadow: `0 8px 32px ${currentTheme.colors.primary}40`,
                         }}
                     >
-                        <span className="text-2xl font-bold text-white relative z-10">D</span>
+                        <Image
+                            src="/clarvu-logo.svg"
+                            alt="Clarvu Logo"
+                            width={64}
+                            height={64}
+                            className="relative z-10"
+                            priority
+                        />
                         <motion.div
                             animate={{ rotate: 360 }}
                             transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}

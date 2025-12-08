@@ -105,7 +105,7 @@ export async function runRoutineAI(
         time: new Date(e.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     }));
 
-    const prompt = `You are DayFlow AI, a productivity coach. Build a personalized daily routine based on this user data:
+    const prompt = `You are Clarvu AI, a productivity coach. Build a personalized daily routine based on this user data:
 
 RECENT TASKS (last 14 days sample):
 ${JSON.stringify(taskSummary, null, 2)}

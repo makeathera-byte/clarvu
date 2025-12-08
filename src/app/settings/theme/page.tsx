@@ -78,7 +78,7 @@ export default function ThemeSettingsPage() {
                         )}
                     </div>
                     <p style={{ color: currentTheme.colors.mutedForeground }}>
-                        Customize the look and feel of DayFlow
+                        Customize the look and feel of Clarvu
                     </p>
                 </motion.div>
 

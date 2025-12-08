@@ -30,7 +30,7 @@ interface RoutineResult {
     notes: string;
 }
 
-const STORAGE_KEY = 'dayflow_routine';
+const STORAGE_KEY = 'clarvu_routine';
 
 type TabType = 'daily' | 'weekly' | 'monthly' | 'routine';
 

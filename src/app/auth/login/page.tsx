@@ -10,6 +10,7 @@ import { PasswordInput } from '@/components/auth/PasswordInput';
 import { Button } from '@/components/ui/button';
 import { Mail, ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { loginAction } from './actions';
 
 // Generate random tile positions
@@ -155,7 +156,14 @@ function LoginContent() {
                                     boxShadow: `0 8px 32px ${currentTheme.colors.primary}40`,
                                 }}
                             >
-                                <span className="text-2xl font-bold text-white relative z-10">D</span>
+                                <Image
+                                    src="/clarvu-logo.svg"
+                                    alt="Clarvu Logo"
+                                    width={64}
+                                    height={64}
+                                    className="relative z-10"
+                                    priority
+                                />
                                 <motion.div
                                     animate={{ rotate: 360 }}
                                     transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}

@@ -1,4 +1,4 @@
-// Date utility functions for DayFlow
+// Date utility functions for Clarvu
 
 /**
  * Get today's date range (start of day to start of tomorrow)

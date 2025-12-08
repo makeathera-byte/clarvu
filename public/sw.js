@@ -1,4 +1,4 @@
-// DayFlow Service Worker for Push Notifications
+// Clarvu Service Worker for Push Notifications
 
 self.addEventListener('install', (event) => {
     console.log('Service Worker installed');
@@ -30,7 +30,7 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'DayFlow', options)
+        self.registration.showNotification(data.title || 'Clarvu', options)
     );
 });
 

@@ -27,7 +27,7 @@ interface RoutineResult {
     notes: string;
 }
 
-const STORAGE_KEY = 'dayflow_routine';
+const STORAGE_KEY = 'clarvu_routine';
 
 export function RoutineClient() {
     const { currentTheme } = useTheme();

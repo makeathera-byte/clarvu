@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "DayFlow - Mindful Productivity",
-  description: "A beautiful productivity app for focused work and mindful planning",
+  title: "Clarvu - Productivity & Deep Work Analytics for Business Owners",
+  description: "Clarvu — Productivity, focus, and deep work analytics designed for business owners who want to maximize their time.",
 };
 
 export default function RootLayout({

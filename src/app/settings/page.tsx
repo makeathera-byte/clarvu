@@ -76,7 +76,7 @@ export default function SettingsOverviewPage() {
                                 className="text-lg font-semibold"
                                 style={{ color: currentTheme.colors.foreground }}
                             >
-                                DayFlow User
+                                Clarvu User
                             </h2>
                             <p className="text-sm" style={{ color: currentTheme.colors.mutedForeground }}>
                                 user@example.com
