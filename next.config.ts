@@ -31,6 +31,23 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
   },
+
+  // Suppress deprecation warnings from transitive dependencies
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
+
+  // Webpack config to suppress warnings
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.ignoreWarnings = [
+        { module: /node-domexception/ },
+        { message: /node-domexception/ },
+      ];
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
