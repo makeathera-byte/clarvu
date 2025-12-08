@@ -9,22 +9,23 @@ import {
 import { AnalyticsClient } from './AnalyticsClient';
 
 export default async function AnalyticsPage() {
-    const supabase = await createClient();
+    try {
+        const supabase = await createClient();
 
-    // Check authentication - redirect if not logged in
-    const { data: { user } } = await supabase.auth.getUser();
+        // Check authentication - redirect if not logged in
+        const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-        redirect('/auth/login');
-    }
+        if (!user) {
+            redirect('/auth/login');
+        }
 
-    // Fetch all data for authenticated user
-    const [allTasks, todayTasks, yesterdayTasks, categories] = await Promise.all([
-        fetchAnalyticsTasks(30), // Last 30 days
-        fetchTodayTasksForAnalytics(),
-        fetchYesterdayTasks(),
-        fetchAllCategories(),
-    ]);
+        // Fetch all data for authenticated user
+        const [allTasks, todayTasks, yesterdayTasks, categories] = await Promise.all([
+            fetchAnalyticsTasks(30), // Last 30 days
+            fetchTodayTasksForAnalytics(),
+            fetchYesterdayTasks(),
+            fetchAllCategories(),
+        ]);
 
     // Filter week tasks (last 7 days)
     const weekAgo = new Date();
@@ -35,13 +36,26 @@ export default async function AnalyticsPage() {
         t.start_time && new Date(t.start_time) >= weekAgo
     );
 
-    return (
-        <AnalyticsClient
-            allTasks={allTasks}
-            todayTasks={todayTasks}
-            yesterdayTasks={yesterdayTasks}
-            weekTasks={weekTasks}
-            categories={categories}
-        />
-    );
+        return (
+            <AnalyticsClient
+                allTasks={allTasks}
+                todayTasks={todayTasks}
+                yesterdayTasks={yesterdayTasks}
+                weekTasks={weekTasks}
+                categories={categories}
+            />
+        );
+    } catch (error) {
+        console.error('Error in AnalyticsPage:', error);
+        // Return empty state instead of crashing
+        return (
+            <AnalyticsClient
+                allTasks={[]}
+                todayTasks={[]}
+                yesterdayTasks={[]}
+                weekTasks={[]}
+                categories={[]}
+            />
+        );
+    }
 }

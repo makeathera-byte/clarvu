@@ -13,15 +13,16 @@ export default async function IntegrationsPage({
 }: {
     searchParams: Promise<SearchParams>;
 }) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-        redirect('/auth/login');
-    }
+        if (!user) {
+            redirect('/auth/login');
+        }
 
-    // Get connection status
-    const connectionStatus = await getGoogleCalendarConnection(user.id);
+        // Get connection status
+        const connectionStatus = await getGoogleCalendarConnection(user.id);
 
     // Parse URL params for messages
     const params = await searchParams;
@@ -54,12 +55,24 @@ export default async function IntegrationsPage({
         }
     }
 
-    return (
-        <IntegrationsClient
-            isConnected={connectionStatus.connected}
-            lastSynced={connectionStatus.lastSynced}
-            successMessage={successMessage}
-            errorMessage={errorMessage}
-        />
-    );
+        return (
+            <IntegrationsClient
+                isConnected={connectionStatus.connected}
+                lastSynced={connectionStatus.lastSynced}
+                successMessage={successMessage}
+                errorMessage={errorMessage}
+            />
+        );
+    } catch (error) {
+        console.error('Error in IntegrationsPage:', error);
+        // Return error state instead of crashing
+        return (
+            <IntegrationsClient
+                isConnected={false}
+                lastSynced={null}
+                successMessage={null}
+                errorMessage="Failed to load integration settings. Please try again."
+            />
+        );
+    }
 }

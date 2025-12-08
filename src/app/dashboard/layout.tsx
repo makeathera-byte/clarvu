@@ -19,28 +19,34 @@ interface ProfileTheme {
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-    const supabase = await createClient();
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Default theme values
     let initialThemeId = defaultTheme.id;
+    let user = null;
 
-    // Load theme from profile if user is authenticated
-    if (user) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('theme_name')
-            .eq('id', user.id)
-            .single<ProfileTheme>();
+    try {
+        const supabase = await createClient();
 
-        if (profile?.theme_name) {
-            const theme = getThemeById(profile.theme_name);
-            if (theme) {
-                initialThemeId = profile.theme_name;
+        // Get current user
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        user = authUser;
+
+        // Load theme from profile if user is authenticated
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('theme_name')
+                .eq('id', user.id)
+                .single<ProfileTheme>();
+
+            if (profile?.theme_name) {
+                const theme = getThemeById(profile.theme_name);
+                if (theme) {
+                    initialThemeId = profile.theme_name;
+                }
             }
         }
+    } catch (error) {
+        console.error('Error in DashboardLayout:', error);
+        // Use default theme if there's an error
     }
 
     return (
