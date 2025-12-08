@@ -26,7 +26,7 @@ export function ExportButton() {
         startTransition(async () => {
             const result = await exportUsersCSV();
             if (result.csv) {
-                downloadCSV(result.csv, `dayflow_users_${new Date().toISOString().split('T')[0]}.csv`);
+                downloadCSV(result.csv, `clarvu_users_${new Date().toISOString().split('T')[0]}.csv`);
             } else {
                 alert('Export failed: ' + (result.error || 'Unknown error'));
             }

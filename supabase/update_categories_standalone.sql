@@ -9,15 +9,28 @@
 -- 4. Click "Run" to execute
 --
 -- This will:
--- 1. Update the function for NEW users
+-- 1. Update the function for NEW users (creates profile + categories)
 -- 2. Clean up orphaned categories (user_id = null)
 -- 3. Update EXISTING users' categories to the new 8-category system
 -- ============================================================
 
 -- Step 1: Update the function for new users
+-- This function now creates BOTH profile and categories for new users
 create or replace function public.create_default_categories()
 returns trigger as $$
 begin
+  -- First, create the profile for the new user
+  -- Use on conflict to handle cases where profile might already exist
+  insert into public.profiles (id, full_name, theme_name, onboarding_complete)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', ''),
+    coalesce(new.raw_user_meta_data->>'theme_name', 'forest'),
+    false
+  )
+  on conflict (id) do nothing; -- In case profile already exists
+  
+  -- Then, create default categories
   insert into public.categories (user_id, name, color, type, is_default)
   values
     (new.id, 'Business', '#2563eb', 'growth', true),
@@ -31,7 +44,7 @@ begin
 
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer; -- Use security definer to bypass RLS
 
 -- Step 2: Clean up orphaned categories (user_id = null)
 delete from public.categories where user_id is null;
@@ -122,7 +135,7 @@ end $$;
 -- Migration Complete!
 -- ============================================================
 -- All categories have been updated:
--- 1. New users will receive the 8 default categories
+-- 1. New users will automatically receive a profile and 8 default categories
 -- 2. Orphaned categories (user_id = null) have been removed
 -- 3. Existing users now have the correct 8 default categories
 -- 

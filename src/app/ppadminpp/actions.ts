@@ -1231,7 +1231,7 @@ export async function exportUsersCSV(): Promise<{ csv?: string; error?: string }
 export async function adminExportUsersCSV(): Promise<{ csv?: string; filename?: string; error?: string }> {
     const result = await exportUsersCSV();
     if (result.error) return { error: result.error };
-    return { csv: result.csv, filename: 'dayflow_all_users.csv' };
+    return { csv: result.csv, filename: 'clarvu_all_users.csv' };
 }
 
 export async function adminExportUserUsageCSV(): Promise<{ csv?: string; filename?: string; error?: string }> {
@@ -1252,7 +1252,7 @@ export async function adminExportUserUsageCSV(): Promise<{ csv?: string; filenam
     ]);
 
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    return { csv, filename: 'dayflow_user_usage.csv' };
+    return { csv, filename: 'clarvu_user_usage.csv' };
 }
 
 export async function adminExportSystemStatsJSON(): Promise<{ json?: string; filename?: string; error?: string }> {
@@ -1267,7 +1267,7 @@ export async function adminExportSystemStatsJSON(): Promise<{ json?: string; fil
         stats: stats.stats,
     }, null, 2);
 
-    return { json, filename: 'dayflow_system_stats.json' };
+    return { json, filename: 'clarvu_system_stats.json' };
 }
 
 export async function adminExportLogsCSV(range: string = '7d'): Promise<{ csv?: string; filename?: string; error?: string }> {
@@ -1306,6 +1306,6 @@ export async function adminExportLogsCSV(range: string = '7d'): Promise<{ csv?: 
     ]);
 
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    return { csv, filename: `dayflow_logs_${range}.csv` };
+    return { csv, filename: `clarvu_logs_${range}.csv` };
 }
 
