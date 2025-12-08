@@ -24,6 +24,8 @@ interface CategoryFromDB {
 
 interface UserProfile {
     full_name: string | null;
+    timezone: string | null;
+    country: string | null;
 }
 
 interface CalendarEventFromDB {
@@ -41,8 +43,17 @@ export async function fetchTodayTasks(): Promise<TaskFromDB[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    // Get today's date range
-    const { start, end } = getTodayRange();
+    // Get user's timezone from profile
+    const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('timezone')
+        .eq('id', user.id)
+        .single();
+
+    const userTimezone = profile?.timezone || 'UTC';
+
+    // Get today's date range in user's timezone
+    const { start, end } = getTodayRange(userTimezone);
 
     try {
         // Fetch all user's tasks (we'll filter in memory for better control)
@@ -151,7 +162,7 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
 
     const { data, error } = await (supabase as any)
         .from('profiles')
-        .select('full_name')
+        .select('full_name, timezone, country')
         .eq('id', user.id)
         .single();
 
@@ -169,7 +180,17 @@ export async function fetchTodayCalendarEvents(): Promise<CalendarEventFromDB[]>
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { start, end } = getTodayRange();
+    // Get user's timezone from profile
+    const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('timezone')
+        .eq('id', user.id)
+        .single();
+
+    const userTimezone = profile?.timezone || 'UTC';
+
+    // Get today's date range in user's timezone
+    const { start, end } = getTodayRange(userTimezone);
 
     const { data, error } = await (supabase as any)
         .from('calendar_events')

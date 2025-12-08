@@ -23,6 +23,7 @@ export default async function DashboardPage() {
                     initialTasks={tasks}
                     userName={profile?.full_name}
                     calendarEvents={calendarEvents}
+                    userTimezone={profile?.timezone || 'UTC'}
                 />
             </>
         );
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
                     initialTasks={[]}
                     userName={null}
                     calendarEvents={[]}
+                    userTimezone="UTC"
                 />
             </>
         );

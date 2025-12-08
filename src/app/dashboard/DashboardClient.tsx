@@ -53,12 +53,14 @@ interface DashboardClientProps {
     initialTasks: Task[];
     userName?: string | null;
     calendarEvents: CalendarEvent[];
+    userTimezone?: string;
 }
 
 export function DashboardClient({
     initialTasks,
     userName,
     calendarEvents,
+    userTimezone = 'UTC',
 }: DashboardClientProps) {
     const { currentTheme } = useTheme();
     const { taskId: activeTaskId, openTimer } = useTimerStore();
@@ -105,11 +107,12 @@ export function DashboardClient({
         });
     }, []);
 
-    // Set default time
+    // Set default time in user's timezone
     useEffect(() => {
         const now = new Date();
-        setNewTaskTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
-    }, []);
+        const tzNow = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+        setNewTaskTime(`${tzNow.getHours().toString().padStart(2, '0')}:${tzNow.getMinutes().toString().padStart(2, '0')}`);
+    }, [userTimezone]);
 
     // Close category picker and priority menu on outside click
     const quickAddPriorityRef = useRef<HTMLDivElement>(null);
@@ -177,7 +180,12 @@ export function DashboardClient({
 
     const formatTime = (iso: string | null) => {
         if (!iso) return '';
-        return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return new Date(iso).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true,
+            timeZone: userTimezone,
+        });
     };
 
     const handleQuickAdd = async () => {
@@ -187,18 +195,46 @@ export function DashboardClient({
         const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         try {
-            const today = new Date();
-            const [h, m] = newTaskTime.split(':').map(Number);
-            today.setHours(h, m, 0, 0);
-
+            // Create the start time properly in user's timezone
+            const now = new Date();
+            const [hours, minutes] = newTaskTime.split(':').map(Number);
+            
+            // Get current date in user's timezone
+            const tzFormatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: userTimezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            });
+            const tzParts = tzFormatter.formatToParts(now);
+            const year = parseInt(tzParts.find(p => p.type === 'year')?.value || '0');
+            const month = parseInt(tzParts.find(p => p.type === 'month')?.value || '0');
+            const day = parseInt(tzParts.find(p => p.type === 'day')?.value || '0');
+            
+            // Create a date string representing the local time in user's timezone
+            const localDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+            
+            // Convert this local time to UTC
+            // We'll create a date and use the timezone offset
+            const tempDate = new Date(localDateStr);
+            const utcTime = tempDate.getTime();
+            
+            // Get what this time would be interpreted as in the user's timezone vs UTC
+            const utcDate = new Date(tempDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+            const tzDate = new Date(tempDate.toLocaleString('en-US', { timeZone: userTimezone }));
+            const offset = utcDate.getTime() - tzDate.getTime();
+            
+            // Apply the offset to get the correct UTC time
+            const finalStartTime = new Date(utcTime - offset);
+            
             // Optimistically add task to store immediately (before server response)
             const optimisticTask: any = {
                 id: tempId,
                 user_id: '', // Will be updated by server
                 title: newTaskTitle.trim(),
                 category_id: newTaskCategory,
-                start_time: isTaskScheduled ? today.toISOString() : null,
-                status: isTaskScheduled ? (today > new Date() ? 'scheduled' : 'in_progress') : 'unscheduled',
+                start_time: isTaskScheduled ? finalStartTime.toISOString() : null,
+                status: isTaskScheduled ? (finalStartTime > now ? 'scheduled' : 'in_progress') : 'unscheduled',
                 priority: newTaskPriority,
                 is_scheduled: isTaskScheduled,
                 duration_minutes: 30,
@@ -211,7 +247,7 @@ export function DashboardClient({
             const result = await createTaskAction({
                 title: newTaskTitle.trim(),
                 categoryId: newTaskCategory,
-                startTime: today.toISOString(),
+                startTime: finalStartTime.toISOString(),
                 priority: newTaskPriority,
                 isScheduled: isTaskScheduled,
             });

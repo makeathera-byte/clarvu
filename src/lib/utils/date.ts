@@ -1,14 +1,56 @@
 // Date utility functions for Clarvu
 
 /**
- * Get today's date range (start of day to start of tomorrow)
+ * Get today's date range (start of day to start of tomorrow) in a specific timezone
+ * @param timezone - IANA timezone string (e.g., 'America/New_York'). Defaults to UTC if not provided.
  */
-export function getTodayRange(): { start: Date; end: Date } {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+export function getTodayRange(timezone?: string): { start: Date; end: Date } {
+    if (!timezone) {
+        // Fallback to UTC if no timezone provided
+        const start = new Date();
+        start.setUTCHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setUTCDate(end.getUTCDate() + 1);
+        return { start, end };
+    }
 
+    // Get current time in the specified timezone
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    });
+
+    // Get today's date in the timezone
+    const parts = formatter.formatToParts(now);
+    const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
+    const month = parseInt(parts.find(p => p.type === 'month')?.value || '0') - 1; // Month is 0-indexed
+    const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
+
+    // Create start of day string in the timezone
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00`;
+    
+    // Create a date object representing midnight in the user's timezone
+    // We need to interpret this date string as if it's in the user's timezone
+    const tempDate = new Date(dateStr);
+    
+    // Get what this date would be in UTC
+    const utcDate = new Date(tempDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const localDate = new Date(tempDate.toLocaleString('en-US', { timeZone: timezone }));
+    const offset = utcDate.getTime() - localDate.getTime();
+    
+    // Create start of day in UTC
+    const start = new Date(tempDate.getTime() - offset);
+    
+    // Create end of day (start of tomorrow) - add 24 hours
     const end = new Date(start);
-    end.setDate(end.getDate() + 1);
+    end.setUTCHours(end.getUTCHours() + 24);
 
     return { start, end };
 }
@@ -28,16 +70,24 @@ export function getYesterdayRange(): { start: Date; end: Date } {
 
 /**
  * Format time from ISO string to 12-hour format
+ * @param isoString - ISO timestamp string
+ * @param timezone - IANA timezone string (e.g., 'America/New_York'). Uses browser timezone if not provided.
  */
-export function formatTime(isoString: string | null | undefined): string {
+export function formatTime(isoString: string | null | undefined, timezone?: string): string {
     if (!isoString) return '--:--';
 
     const date = new Date(isoString);
-    return date.toLocaleTimeString('en-US', {
+    const options: Intl.DateTimeFormatOptions = {
         hour: '2-digit',
         minute: '2-digit',
         hour12: true,
-    });
+    };
+    
+    if (timezone) {
+        options.timeZone = timezone;
+    }
+    
+    return date.toLocaleTimeString('en-US', options);
 }
 
 /**
