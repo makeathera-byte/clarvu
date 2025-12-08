@@ -81,8 +81,31 @@ function LoginContent() {
                 setIsLoading(false);
             }
             // If success, the action will redirect to /dashboard
-        } catch {
-            setError('An unexpected error occurred');
+            // Note: redirect() throws an error in Next.js, which is expected behavior
+        } catch (error) {
+            // Check if this is a redirect error (expected behavior in Next.js)
+            if (error && typeof error === 'object' && 'digest' in error) {
+                const redirectError = error as { digest?: string };
+                if (redirectError.digest?.includes('NEXT_REDIRECT')) {
+                    // This is a redirect, don't treat it as an error
+                    return;
+                }
+            }
+            
+            console.error('Login error:', error);
+            console.error('Error details:', {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                name: error instanceof Error ? error.name : undefined,
+                error: error,
+            });
+            
+            const errorMessage = error instanceof Error 
+                ? error.message 
+                : typeof error === 'string' 
+                    ? error 
+                    : 'An unexpected error occurred';
+            setError(errorMessage);
             setIsLoading(false);
         }
     }, [email, password]);
