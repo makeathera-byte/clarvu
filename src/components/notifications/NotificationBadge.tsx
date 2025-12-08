@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/theme/ThemeContext';
 import { Bell } from 'lucide-react';
 import { getUnreadCount } from '@/app/notifications/actions';
 import { NotificationPanel } from './NotificationPanel';
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 
 export function NotificationBadge() {
     const { currentTheme } = useTheme();
@@ -23,7 +23,6 @@ export function NotificationBadge() {
         loadCount();
 
         // Set up realtime subscription
-        const supabase = createClient();
 
         const channel = supabase
             .channel('notifications')

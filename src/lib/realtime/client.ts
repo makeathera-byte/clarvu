@@ -1,10 +1,10 @@
 // Supabase Realtime client for client-side subscriptions
 // Uses the same client as the rest of the app for consistency
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 
 // Get the browser client for realtime subscriptions
 export function getRealtimeClient() {
-    return createClient();
+    return supabase;
 }
 
 // Channel names for each entity
