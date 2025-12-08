@@ -12,9 +12,8 @@ import { CountrySelector } from '@/components/auth/CountrySelector';
 import { Button } from '@/components/ui/button';
 import { User, Mail, ArrowRight, ArrowLeft, Globe } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { signUpAction } from './actions';
-import { countries, getDefaultCountry, type Country } from '@/lib/utils/countries';
+import type { Country } from '@/lib/utils/countries';
 
 interface FormErrors {
     fullName?: string;
@@ -35,10 +34,25 @@ export default function SignupPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
     const [showVerificationModal, setShowVerificationModal] = useState(false);
+    const [countriesList, setCountriesList] = useState<Country[]>([]);
 
-    // Auto-detect country on mount
+    // Load countries and auto-detect country on mount (client-side only)
     useEffect(() => {
-        setSelectedCountry(getDefaultCountry());
+        // Dynamically import to avoid SSR issues
+        import('@/lib/utils/countries').then(({ countries, getDefaultCountry }) => {
+            setCountriesList(countries);
+            try {
+                setSelectedCountry(getDefaultCountry());
+            } catch (error) {
+                console.error('Error getting default country:', error);
+                // Fallback to first country if there's an error
+                if (countries.length > 0) {
+                    setSelectedCountry(countries[0]);
+                }
+            }
+        }).catch((error) => {
+            console.error('Error loading countries:', error);
+        });
     }, []);
 
     // Handle theme selection
@@ -50,12 +64,12 @@ export default function SignupPage() {
 
     // Handle country selection
     const handleCountryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        const country = countries.find(c => c.code === e.target.value);
+        const country = countriesList.find(c => c.code === e.target.value);
         if (country) {
             setSelectedCountry(country);
             setErrors(prev => ({ ...prev, country: undefined }));
         }
-    }, []);
+    }, [countriesList]);
 
     // Validate form
     const validateForm = useCallback((): boolean => {
@@ -141,14 +155,7 @@ export default function SignupPage() {
                             boxShadow: `0 8px 32px ${currentTheme.colors.primary}40`,
                         }}
                     >
-                        <Image
-                            src="/clarvu-logo.svg"
-                            alt="Clarvu Logo"
-                            width={64}
-                            height={64}
-                            className="relative z-10"
-                            priority
-                        />
+                        <span className="text-2xl font-bold text-white relative z-10">C</span>
                         <motion.div
                             animate={{ rotate: 360 }}
                             transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
@@ -236,16 +243,22 @@ export default function SignupPage() {
                                 <Globe className="w-4 h-4" />
                                 Country
                             </label>
-                            <CountrySelector
-                                countries={countries}
-                                selectedCountry={selectedCountry}
-                                onSelect={(country) => {
-                                    setSelectedCountry(country);
-                                    setErrors(prev => ({ ...prev, country: undefined }));
-                                }}
-                                error={errors.country}
-                                currentTheme={currentTheme}
-                            />
+                            {countriesList.length > 0 ? (
+                                <CountrySelector
+                                    countries={countriesList}
+                                    selectedCountry={selectedCountry}
+                                    onSelect={(country) => {
+                                        setSelectedCountry(country);
+                                        setErrors(prev => ({ ...prev, country: undefined }));
+                                    }}
+                                    error={errors.country}
+                                    currentTheme={currentTheme}
+                                />
+                            ) : (
+                                <div className="w-full h-12 px-4 rounded-xl border-2 flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.muted, color: currentTheme.colors.mutedForeground }}>
+                                    Loading countries...
+                                </div>
+                            )}
                         </div>
 
                         {/* Theme Selection */}
