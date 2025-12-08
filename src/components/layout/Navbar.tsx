@@ -1,0 +1,215 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '@/lib/theme/ThemeContext';
+import { LayoutDashboard, Timer, Settings, LogOut, Menu, X, BarChart3, Sparkles, Shield } from 'lucide-react';
+import { logoutAction } from '@/app/auth/login/actions';
+import { NotificationBadge } from '@/components/notifications';
+import { ConnectionStatusIndicator } from '@/components/realtime';
+
+interface NavbarProps {
+    isAdmin?: boolean;
+}
+
+const getNavItems = (isAdmin: boolean) => [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard/routine', label: 'Routine', icon: Sparkles },
+    { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/timer', label: 'Timer', icon: Timer },
+    { href: '/settings/theme', label: 'Settings', icon: Settings },
+    ...(isAdmin ? [{ href: '/ppadminpp', label: 'Admin', icon: Shield }] : []),
+];
+
+export function Navbar({ isAdmin = false }: NavbarProps) {
+    const pathname = usePathname();
+    const { currentTheme } = useTheme();
+    const [isOpen, setIsOpen] = useState(false);
+    const [isPending, startTransition] = useTransition();
+
+    const navItems = getNavItems(isAdmin);
+
+    const handleLogout = () => {
+        startTransition(async () => {
+            await logoutAction();
+        });
+    };
+
+    const isActive = (href: string) => {
+        if (href === '/dashboard') return pathname === '/dashboard';
+        return pathname.startsWith(href);
+    };
+
+    return (
+        <motion.nav
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="fixed top-0 left-0 right-0 z-40 px-4 py-4"
+        >
+            <div className="max-w-6xl mx-auto">
+                <div
+                    className="flex items-center justify-between px-6 py-3 rounded-2xl backdrop-blur-xl border"
+                    style={{
+                        backgroundColor: currentTheme.colors.card,
+                        borderColor: currentTheme.colors.border,
+                        boxShadow: `0 4px 20px ${currentTheme.colors.background}40`,
+                    }}
+                >
+                    {/* Logo */}
+                    <Link href="/dashboard" className="flex items-center gap-2">
+                        <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{
+                                background: `linear-gradient(135deg, ${currentTheme.colors.primary}, ${currentTheme.colors.accent})`,
+                            }}
+                        >
+                            <span className="text-sm font-bold text-white">D</span>
+                        </div>
+                        <span
+                            className="font-semibold hidden sm:block"
+                            style={{ color: currentTheme.colors.foreground }}
+                        >
+                            DayFlow
+                        </span>
+                    </Link>
+
+                    {/* Desktop Navigation */}
+                    <div className="hidden md:flex items-center gap-1">
+                        {navItems.map((item) => {
+                            const Icon = item.icon;
+                            const active = isActive(item.href);
+
+                            return (
+                                <Link key={item.href} href={item.href}>
+                                    <motion.div
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className="relative px-4 py-2 rounded-xl flex items-center gap-2"
+                                        style={{
+                                            color: active
+                                                ? currentTheme.colors.primary
+                                                : currentTheme.colors.mutedForeground,
+                                        }}
+                                    >
+                                        {active && (
+                                            <motion.div
+                                                layoutId="navbar-indicator"
+                                                className="absolute inset-0 rounded-xl"
+                                                style={{ backgroundColor: `${currentTheme.colors.primary}15` }}
+                                                transition={{ type: 'spring', duration: 0.5 }}
+                                            />
+                                        )}
+                                        <Icon className="w-4 h-4 relative z-10" />
+                                        <span className="text-sm font-medium relative z-10">
+                                            {item.label}
+                                        </span>
+                                    </motion.div>
+                                </Link>
+                            );
+                        })}
+                    </div>
+
+                    {/* Desktop Right Side - Notifications + Logout */}
+                    <div className="hidden md:flex items-center gap-2">
+                        <NotificationBadge />
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleLogout}
+                            disabled={isPending}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors"
+                            style={{
+                                color: currentTheme.colors.mutedForeground,
+                                backgroundColor: 'transparent',
+                            }}
+                        >
+                            {isPending ? (
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                                    className="w-4 h-4 border-2 rounded-full"
+                                    style={{
+                                        borderColor: currentTheme.colors.border,
+                                        borderTopColor: currentTheme.colors.primary,
+                                    }}
+                                />
+                            ) : (
+                                <LogOut className="w-4 h-4" />
+                            )}
+                            <span className="text-sm font-medium">Logout</span>
+                        </motion.button>
+                    </div>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        className="md:hidden p-2 rounded-lg"
+                        onClick={() => setIsOpen(!isOpen)}
+                        style={{ color: currentTheme.colors.foreground }}
+                    >
+                        {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
+
+                {/* Mobile Menu */}
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="md:hidden mt-2 p-4 rounded-2xl backdrop-blur-xl border"
+                            style={{
+                                backgroundColor: currentTheme.colors.card,
+                                borderColor: currentTheme.colors.border,
+                            }}
+                        >
+                            <div className="space-y-2">
+                                {navItems.map((item) => {
+                                    const Icon = item.icon;
+                                    const active = isActive(item.href);
+
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            onClick={() => setIsOpen(false)}
+                                        >
+                                            <div
+                                                className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                                                style={{
+                                                    backgroundColor: active ? `${currentTheme.colors.primary}15` : 'transparent',
+                                                    color: active
+                                                        ? currentTheme.colors.primary
+                                                        : currentTheme.colors.foreground,
+                                                }}
+                                            >
+                                                <Icon className="w-5 h-5" />
+                                                <span className="font-medium">{item.label}</span>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+
+                                {/* Mobile Logout */}
+                                <button
+                                    onClick={handleLogout}
+                                    disabled={isPending}
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl"
+                                    style={{ color: currentTheme.colors.mutedForeground }}
+                                >
+                                    <LogOut className="w-5 h-5" />
+                                    <span className="font-medium">
+                                        {isPending ? 'Logging out...' : 'Logout'}
+                                    </span>
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </motion.nav>
+    );
+}
