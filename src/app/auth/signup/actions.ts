@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/lib/supabase/types';
 
 export interface SignupFormData {
     fullName: string;
@@ -67,16 +68,21 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
         // Note: After signup, the session might not be immediately available for RLS
         // So we'll try update first, and if it fails due to RLS, that's okay - the trigger created it
         
+        // Update the profile with all signup fields
+        // Using type assertion to work around TypeScript inference issues with Supabase
+        const updatePayload = {
+            full_name: formData.fullName,
+            theme_name: formData.themeName,
+            country: formData.country,
+            timezone: formData.timezone,
+        };
+        
+        // TypeScript has issues inferring the update type, so we cast the entire chain
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: profileError } = await supabase
+        const { error: profileError } = await ((supabase as any)
             .from('profiles')
-            .update({
-                full_name: formData.fullName,
-                theme_name: formData.themeName,
-                country: formData.country,
-                timezone: formData.timezone,
-            } as any)
-            .eq('id', data.user.id);
+            .update(updatePayload)
+            .eq('id', data.user.id));
 
         if (profileError) {
             console.error('Profile update error:', profileError);
