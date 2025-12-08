@@ -59,32 +59,56 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
         }
 
         // The database triggers will automatically create the profile and default categories
-        // We'll wait a moment for the triggers to complete, then update the profile with signup data
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // We'll wait a moment for the triggers to complete
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // Update the profile with all signup fields
-        // The profile should already exist from the trigger, but we'll use upsert to be safe
-        const profileData = {
-            id: data.user.id,
-            full_name: formData.fullName,
-            theme_name: formData.themeName,
-            country: formData.country,
-            timezone: formData.timezone,
-            onboarding_complete: false,
-        };
-
+        // Try to update the profile with all signup fields
+        // The profile should already exist from the trigger
+        // Note: After signup, the session might not be immediately available for RLS
+        // So we'll try update first, and if it fails due to RLS, that's okay - the trigger created it
+        
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: profileError } = await supabase
             .from('profiles')
-            .upsert(profileData as any, {
-                onConflict: 'id'
-            });
+            .update({
+                full_name: formData.fullName,
+                theme_name: formData.themeName,
+                country: formData.country,
+                timezone: formData.timezone,
+            } as any)
+            .eq('id', data.user.id);
 
         if (profileError) {
-            console.error('Profile upsert error:', profileError);
+            console.error('Profile update error:', profileError);
+            console.error('Error code:', profileError.code);
+            console.error('Error message:', profileError.message);
+            console.error('Error hint:', profileError.hint);
             console.error('Error details:', JSON.stringify(profileError, null, 2));
-            // Don't fail signup if profile update fails - the profile was created by trigger
-            // But log it for debugging
+            
+            // If update fails (likely due to RLS), try upsert as fallback
+            const profileData = {
+                id: data.user.id,
+                full_name: formData.fullName,
+                theme_name: formData.themeName,
+                country: formData.country,
+                timezone: formData.timezone,
+                onboarding_complete: false,
+            };
+            
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: upsertError } = await supabase
+                .from('profiles')
+                .upsert(profileData as any, {
+                    onConflict: 'id'
+                });
+            
+            if (upsertError) {
+                console.error('Profile upsert also failed:', upsertError);
+                console.error('Upsert error code:', upsertError.code);
+                console.error('Upsert error message:', upsertError.message);
+                // Don't fail signup - the profile was created by trigger with default values
+                // The user can update their profile later in settings
+            }
         }
 
         // Verify default categories were created, create them if not (fallback)
@@ -126,7 +150,26 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
         return { success: true };
     } catch (error) {
         console.error('Unexpected signup error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during signup';
+        console.error('Error details:', {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            name: error instanceof Error ? error.name : undefined,
+            error: error,
+        });
+        
+        let errorMessage = 'An unexpected error occurred during signup';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        } else {
+            try {
+                errorMessage = JSON.stringify(error);
+            } catch {
+                errorMessage = String(error);
+            }
+        }
+        
         return { success: false, error: errorMessage };
     }
 }

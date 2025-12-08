@@ -159,8 +159,18 @@ export default function SignupPage() {
             }
         } catch (error) {
             console.error('Signup error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-            setErrors({ general: errorMessage });
+            console.error('Error details:', {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                name: error instanceof Error ? error.name : undefined,
+                error: error,
+            });
+            const errorMessage = error instanceof Error 
+                ? error.message 
+                : typeof error === 'string' 
+                    ? error 
+                    : JSON.stringify(error);
+            setErrors({ general: errorMessage || 'An unexpected error occurred' });
             setIsLoading(false);
         }
     }, [validateForm, fullName, email, password, selectedTheme, selectedCountry]);
