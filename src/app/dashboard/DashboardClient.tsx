@@ -184,10 +184,29 @@ export function DashboardClient({
         if (!newTaskTitle.trim()) return;
 
         setIsAdding(true);
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
         try {
             const today = new Date();
             const [h, m] = newTaskTime.split(':').map(Number);
             today.setHours(h, m, 0, 0);
+
+            // Optimistically add task to store immediately (before server response)
+            const optimisticTask: any = {
+                id: tempId,
+                user_id: '', // Will be updated by server
+                title: newTaskTitle.trim(),
+                category_id: newTaskCategory,
+                start_time: isTaskScheduled ? today.toISOString() : null,
+                status: isTaskScheduled ? (today > new Date() ? 'scheduled' : 'in_progress') : 'unscheduled',
+                priority: newTaskPriority,
+                is_scheduled: isTaskScheduled,
+                duration_minutes: 30,
+                created_at: new Date().toISOString(),
+            };
+            
+            // Add optimistically to store for immediate UI update
+            taskStore.addOrUpdate(optimisticTask);
 
             const result = await createTaskAction({
                 title: newTaskTitle.trim(),
@@ -198,6 +217,14 @@ export function DashboardClient({
             });
 
             if (result.success && result.task) {
+                // Remove optimistic task
+                taskStore.remove(tempId);
+                
+                // Add the real task immediately (realtime will also update it, but this ensures instant UI)
+                if (result.task.id) {
+                    taskStore.addOrUpdate(result.task as any);
+                }
+                
                 // Record suggestion use for auto-learning
                 await recordSuggestionUse(newTaskTitle.trim(), newTaskCategory);
 
@@ -213,7 +240,14 @@ export function DashboardClient({
                 setNewTaskCategory(null);
                 setShowSuggestions(false);
                 inputRef.current?.focus();
+            } else {
+                // Remove optimistic task on error
+                taskStore.remove(tempId);
             }
+        } catch (error) {
+            // Remove optimistic task on error
+            taskStore.remove(tempId);
+            console.error('Error creating task:', error);
         } finally {
             setIsAdding(false);
         }

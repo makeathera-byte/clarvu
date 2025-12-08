@@ -20,6 +20,7 @@ export interface CreateTaskResult {
         status: string;
         priority: string;
         isScheduled: boolean;
+        [key: string]: any; // Allow full task data
     };
 }
 
@@ -68,8 +69,9 @@ export async function createTaskAction(formData: CreateTaskFormData): Promise<Cr
         return { error: error.message };
     }
 
-    // Revalidate dashboard to show new task
-    revalidatePath('/dashboard');
+    // Don't revalidate - let realtime handle the update for instant UI
+    // Revalidation causes delay. Realtime subscription will update the UI immediately.
+    // revalidatePath('/dashboard');
 
     return {
         success: true,
@@ -79,6 +81,8 @@ export async function createTaskAction(formData: CreateTaskFormData): Promise<Cr
             status: data.status,
             priority: data.priority,
             isScheduled: data.is_scheduled,
+            // Return full task data for optimistic update
+            ...data,
         }
     };
 }
