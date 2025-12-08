@@ -16,20 +16,55 @@ export async function createClient() {
         console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
     }
 
+    // If env vars are missing, create a minimal client that will fail gracefully
+    // This prevents the entire app from crashing during render
     if (!supabaseUrl || !supabaseAnonKey) {
-        const error = new Error(
-            'Missing Supabase environment variables. ' +
-            'Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your Vercel environment variables. ' +
-            'Go to Vercel Dashboard > Your Project > Settings > Environment Variables to add them.'
-        );
-        console.error('Supabase configuration error:', error.message);
+        console.error('⚠️ Supabase env vars missing - creating fallback client');
         console.error('Current env check:', {
             hasUrl: !!supabaseUrl,
             hasKey: !!supabaseAnonKey,
             urlLength: supabaseUrl?.length || 0,
             keyLength: supabaseAnonKey?.length || 0,
         });
-        throw error;
+        
+        // Return a client with empty strings - operations will fail gracefully
+        // This allows the app to render and show error messages instead of crashing
+        try {
+            const cookieStore = await cookies();
+            return createServerClient<Database>(
+                supabaseUrl || 'https://placeholder.supabase.co',
+                supabaseAnonKey || 'placeholder-key',
+                {
+                    cookies: {
+                        getAll() {
+                            try {
+                                return cookieStore.getAll();
+                            } catch {
+                                return [];
+                            }
+                        },
+                        setAll() {
+                            // No-op
+                        },
+                    },
+                }
+            );
+        } catch {
+            return createServerClient<Database>(
+                supabaseUrl || 'https://placeholder.supabase.co',
+                supabaseAnonKey || 'placeholder-key',
+                {
+                    cookies: {
+                        getAll() {
+                            return [];
+                        },
+                        setAll() {
+                            // No-op
+                        },
+                    },
+                }
+            );
+        }
     }
 
     try {

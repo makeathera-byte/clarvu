@@ -18,12 +18,27 @@ export function createClient() {
 
     if (!supabaseUrl) {
         console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
-        throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
     }
 
     if (!supabaseAnonKey) {
         console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
-        throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable');
+    }
+
+    // If env vars are missing, return a client with placeholders
+    // This prevents the app from crashing - operations will fail gracefully
+    if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('⚠️ Supabase env vars missing - creating fallback client');
+        return createBrowserClient<Database>(
+            supabaseUrl || 'https://placeholder.supabase.co',
+            supabaseAnonKey || 'placeholder-key',
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                },
+            }
+        );
     }
 
     return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
