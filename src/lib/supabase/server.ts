@@ -16,6 +16,16 @@ export async function createClient() {
         console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
     }
 
+    // Helper to safely get cookies
+    const getCookieStore = async () => {
+        try {
+            return await cookies();
+        } catch (error) {
+            console.error('Error accessing cookies:', error);
+            return null;
+        }
+    };
+
     // If env vars are missing, create a minimal client that will fail gracefully
     // This prevents the entire app from crashing during render
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -27,64 +37,47 @@ export async function createClient() {
             keyLength: supabaseAnonKey?.length || 0,
         });
         
-        // Return a client with empty strings - operations will fail gracefully
-        // This allows the app to render and show error messages instead of crashing
-        try {
-            const cookieStore = await cookies();
-            return createServerClient<Database>(
-                supabaseUrl || 'https://placeholder.supabase.co',
-                supabaseAnonKey || 'placeholder-key',
-                {
-                    cookies: {
-                        getAll() {
-                            try {
-                                return cookieStore.getAll();
-                            } catch {
-                                return [];
-                            }
-                        },
-                        setAll() {
-                            // No-op
-                        },
-                    },
-                }
-            );
-        } catch {
-            return createServerClient<Database>(
-                supabaseUrl || 'https://placeholder.supabase.co',
-                supabaseAnonKey || 'placeholder-key',
-                {
-                    cookies: {
-                        getAll() {
-                            return [];
-                        },
-                        setAll() {
-                            // No-op
-                        },
-                    },
-                }
-            );
-        }
-    }
-
-    try {
-        // Try to get cookies - wrap in try-catch to handle edge cases
-        const cookieStore = await cookies();
-
+        // Return a client with placeholders - operations will fail gracefully
+        const cookieStore = await getCookieStore();
         return createServerClient<Database>(
-            supabaseUrl,
-            supabaseAnonKey,
+            supabaseUrl || 'https://placeholder.supabase.co',
+            supabaseAnonKey || 'placeholder-key',
             {
                 cookies: {
                     getAll() {
                         try {
-                            return cookieStore.getAll();
+                            return cookieStore?.getAll() || [];
                         } catch {
                             return [];
                         }
                     },
-                    setAll(cookiesToSet) {
-                        try {
+                    setAll() {
+                        // No-op
+                    },
+                },
+            }
+        );
+    }
+
+    // Get cookies safely
+    const cookieStore = await getCookieStore();
+
+    // Create client with proper cookie handling
+    return createServerClient<Database>(
+        supabaseUrl,
+        supabaseAnonKey,
+        {
+            cookies: {
+                getAll() {
+                    try {
+                        return cookieStore?.getAll() || [];
+                    } catch {
+                        return [];
+                    }
+                },
+                setAll(cookiesToSet) {
+                    try {
+                        if (cookieStore) {
                             cookiesToSet.forEach(({ name, value, options }) => {
                                 try {
                                     cookieStore.set(name, value, options);
@@ -92,34 +85,15 @@ export async function createClient() {
                                     // Ignore individual cookie set errors
                                 }
                             });
-                        } catch {
-                            // The `setAll` method was called from a Server Component.
-                            // This can be ignored if you have middleware refreshing user sessions.
                         }
-                    },
+                    } catch {
+                        // The `setAll` method was called from a Server Component.
+                        // This can be ignored if you have middleware refreshing user sessions.
+                    }
                 },
-            }
-        );
-    } catch (error) {
-        // If cookies() fails, create a client without cookie management
-        // This allows the app to continue functioning even if cookies aren't available
-        console.error('Error accessing cookies in createClient, using fallback:', error);
-        
-        return createServerClient<Database>(
-            supabaseUrl,
-            supabaseAnonKey,
-            {
-                cookies: {
-                    getAll() {
-                        return [];
-                    },
-                    setAll() {
-                        // No-op if cookies aren't available
-                    },
-                },
-            }
-        );
-    }
+            },
+        }
+    );
 }
 
 // Helper to get current user
