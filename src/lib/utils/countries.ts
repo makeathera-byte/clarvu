@@ -6,10 +6,10 @@ export interface Country {
     flag: string;
 }
 
-export const countries: Country[] = [
+const _countriesData: Country[] = [
     { code: 'AF', name: 'Afghanistan', timezone: 'Asia/Kabul', flag: '🇦🇫' },
     { code: 'AL', name: 'Albania', timezone: 'Europe/Tirane', flag: '🇦🇱' },
-    { code: ' DZ', name: 'Algeria', timezone: 'Africa/Algiers', flag: '🇩🇿' },
+    { code: 'DZ', name: 'Algeria', timezone: 'Africa/Algiers', flag: '🇩🇿' },
     { code: 'AR', name: 'Argentina', timezone: 'America/Argentina/Buenos_Aires', flag: '🇦🇷' },
     { code: 'AU', name: 'Australia', timezone: 'Australia/Sydney', flag: '🇦🇺' },
     { code: 'AT', name: 'Austria', timezone: 'Europe/Vienna', flag: '🇦🇹' },
@@ -84,7 +84,10 @@ export const countries: Country[] = [
     { code: 'UY', name: 'Uruguay', timezone: 'America/Montevideo', flag: '🇺🇾' },
     { code: 'VE', name: 'Venezuela', timezone: 'America/Caracas', flag: '🇻🇪' },
     { code: 'VN', name: 'Vietnam', timezone: 'Asia/Ho_Chi_Minh', flag: '🇻🇳' },
-].sort((a, b) => a.name.localeCompare(b.name));
+];
+
+// Export sorted countries array
+export const countries: Country[] = _countriesData.sort((a, b) => a.name.localeCompare(b.name));
 
 // Try to detect user's timezone automatically
 export function detectTimezone(): string {
@@ -102,7 +105,12 @@ export function findCountryByTimezone(timezone: string): Country | undefined {
 
 // Get default country based on detected timezone
 export function getDefaultCountry(): Country {
-    const detectedTz = detectTimezone();
-    const match = findCountryByTimezone(detectedTz);
-    return match || countries.find(c => c.code === 'US') || countries[0];
+    try {
+        const detectedTz = detectTimezone();
+        const match = findCountryByTimezone(detectedTz);
+        return match || countries.find(c => c.code === 'US') || countries[0];
+    } catch (error) {
+        // Fallback to US if there's any error (e.g., during SSR)
+        return countries.find(c => c.code === 'US') || countries[0];
+    }
 }
