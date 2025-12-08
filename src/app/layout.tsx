@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description: "Clarvu — Productivity, focus, and deep work analytics designed for business owners who want to maximize their time.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

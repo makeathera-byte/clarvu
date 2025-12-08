@@ -33,14 +33,26 @@ interface ThemeProviderProps {
 export function ThemeProvider({ children, initialThemeId }: ThemeProviderProps) {
     // Initialize with the provided theme or default
     const getInitialTheme = () => {
-        if (initialThemeId) {
-            const theme = getThemeById(initialThemeId);
-            if (theme) return theme;
+        try {
+            if (initialThemeId) {
+                const theme = getThemeById(initialThemeId);
+                if (theme) return theme;
+            }
+            return defaultTheme;
+        } catch (error) {
+            console.error('Error getting initial theme:', error);
+            return defaultTheme;
         }
-        return defaultTheme;
     };
 
-    const [currentTheme, setCurrentTheme] = useState<ThemePreset>(getInitialTheme);
+    const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
+        try {
+            return getInitialTheme();
+        } catch (error) {
+            console.error('Error initializing theme:', error);
+            return defaultTheme;
+        }
+    });
     const [customTheme, setCustomThemeState] = useState<CustomTheme | null>(null);
     const [isCustomTheme, setIsCustomTheme] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
