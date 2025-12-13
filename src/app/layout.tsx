@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme/ThemeContext";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -58,6 +59,7 @@ export default function RootLayout({
           <Suspense fallback={<LoadingFallback />}>
             <ThemeProvider>
               {children}
+              <Toaster position="bottom-right" theme="system" />
             </ThemeProvider>
           </Suspense>
           <Analytics />

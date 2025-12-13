@@ -41,13 +41,23 @@ self.addEventListener('notificationclick', (event) => {
         return;
     }
 
-    const urlToOpen = event.notification.data?.url || '/notifications';
+    // Get notification data
+    const notificationData = event.notification.data || {};
+    const urlToOpen = notificationData.url || '/dashboard';
 
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            // If a window is already open, focus it
+            // If a window is already open, focus it and send message about the task
             for (const client of clientList) {
                 if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    // Send message to client about the clicked task notification
+                    if (notificationData.taskId) {
+                        client.postMessage({
+                            type: 'TASK_NOTIFICATION_CLICKED',
+                            taskId: notificationData.taskId,
+                            taskTitle: notificationData.taskTitle,
+                        });
+                    }
                     return client.focus();
                 }
             }

@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Mail, ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { loginAction } from './actions';
+import { supabaseClient } from '@/lib/supabase/client';
+import { GoogleIcon } from '@/components/auth/GoogleIcon';
 
 // Generate random tile positions
 function generateTiles(count: number) {
@@ -109,6 +111,31 @@ function LoginContent() {
             setIsLoading(false);
         }
     }, [email, password]);
+
+    const handleGoogleSignIn = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const redirectTo = `${window.location.origin}/auth/callback`;
+            const { error: oauthError } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo,
+                },
+            });
+
+            if (oauthError) {
+                setError(oauthError.message || 'Google sign-in failed');
+                setIsLoading(false);
+            }
+            // If successful, the user will be redirected to Google, then to /auth/callback
+        } catch (err) {
+            console.error('Google sign-in error:', err);
+            setError('An unexpected error occurred');
+            setIsLoading(false);
+        }
+    }, []);
 
     return (
         <div className="relative w-full max-w-md">
@@ -281,6 +308,45 @@ function LoginContent() {
                                                 <ArrowRight className="w-4 h-4" />
                                             </>
                                         )}
+                                    </Button>
+                                </motion.div>
+
+                                {/* Divider */}
+                                <div className="flex items-center gap-4 pt-2">
+                                    <div
+                                        className="flex-1 h-px"
+                                        style={{ backgroundColor: currentTheme.colors.border }}
+                                    />
+                                    <span
+                                        className="text-xs uppercase tracking-wider"
+                                        style={{ color: currentTheme.colors.mutedForeground }}
+                                    >
+                                        or
+                                    </span>
+                                    <div
+                                        className="flex-1 h-px"
+                                        style={{ backgroundColor: currentTheme.colors.border }}
+                                    />
+                                </div>
+
+                                {/* Google Sign In Button */}
+                                <motion.div
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    <Button
+                                        type="button"
+                                        onClick={handleGoogleSignIn}
+                                        disabled={isLoading}
+                                        className="w-full h-12 rounded-xl text-base font-medium flex items-center justify-center gap-3 border-2"
+                                        style={{
+                                            backgroundColor: currentTheme.colors.background,
+                                            color: currentTheme.colors.foreground,
+                                            borderColor: currentTheme.colors.border,
+                                        }}
+                                    >
+                                        <GoogleIcon className="w-5 h-5" />
+                                        Continue with Google
                                     </Button>
                                 </motion.div>
 

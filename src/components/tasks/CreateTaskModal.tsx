@@ -18,7 +18,7 @@ interface CreateTaskModalProps {
 
 export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
     const { currentTheme } = useTheme();
-    const { openTimer } = useTimerStore();
+    const { startTaskTimer } = useTimerStore();
     // Use categories from global store (single source of truth)
     const categories = useCategoryStore((s) => s.categories);
 
@@ -176,7 +176,7 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                 if (startNow) {
                     const startResult = await startTaskAction(result.task.id);
                     if (startResult.success) {
-                        openTimer(result.task.id, result.task.title, 30 * 60);
+                        startTaskTimer(result.task.id, result.task.title, 30 * 60);
                     }
                 }
                 onClose();
@@ -187,7 +187,7 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
             setIsLoading(false);
             setIsStartingNow(false);
         }
-    }, [title, categoryId, startTime, onClose, openTimer]);
+    }, [title, categoryId, startTime, onClose, startTaskTimer]);
 
     // Handle suggestion selection
     const handleSelectSuggestion = (suggestion: TaskSuggestion) => {
@@ -460,7 +460,7 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                             </div>
                             {!isScheduled && (
                                 <p className="text-xs" style={{ color: currentTheme.colors.mutedForeground }}>
-                                    Task will be added to your backlog
+                                    Task will be added without a scheduled time
                                 </p>
                             )}
                         </div>
@@ -507,7 +507,7 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                                     color: currentTheme.colors.foreground,
                                 }}
                             >
-                                {isLoading ? 'Creating...' : (isScheduled ? 'Create Task' : 'Add to Backlog')}
+                                {isLoading ? 'Creating...' : 'Create Task'}
                             </Button>
                         </motion.div>
 

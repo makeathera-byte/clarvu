@@ -5,9 +5,13 @@ import { createClient } from '@/lib/supabase/server';
 
 export interface UpdateTaskData {
     taskId: string;
+    title?: string;
+    status?: 'scheduled' | 'in_progress' | 'completed' | 'unscheduled';
     priority?: 'low' | 'medium' | 'high';
+    categoryId?: string | null;
     isScheduled?: boolean;
     startTime?: string | null;
+    durationMinutes?: number; // Duration in minutes for manual time entry
 }
 
 export interface UpdateTaskResult {
@@ -28,13 +32,35 @@ export async function updateTaskAction(data: UpdateTaskData): Promise<UpdateTask
     // Build update object
     const updates: any = {};
 
+    if (data.title !== undefined) {
+        updates.title = data.title;
+    }
+
+    if (data.status !== undefined) {
+        updates.status = data.status;
+
+        // When uncompleting (changing from completed to scheduled), clear time data
+        if (data.status === 'scheduled') {
+            updates.end_time = null;
+            updates.duration_minutes = null;
+        }
+    }
+
     if (data.priority !== undefined) {
         updates.priority = data.priority;
     }
 
+    if (data.durationMinutes !== undefined) {
+        updates.duration_minutes = data.durationMinutes;
+    }
+
+    if (data.categoryId !== undefined) {
+        updates.category_id = data.categoryId;
+    }
+
     if (data.isScheduled !== undefined) {
         updates.is_scheduled = data.isScheduled;
-        
+
         // If unscheduling, set status to unscheduled and clear start_time
         if (!data.isScheduled) {
             updates.status = 'unscheduled';

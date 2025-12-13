@@ -13,6 +13,8 @@ export interface ThemeColors {
     muted: string;
     mutedForeground: string;
     border: string;
+    destructive: string;
+    destructiveForeground: string;
 }
 
 export interface TilePalette {
@@ -52,6 +54,8 @@ export const themePresets: ThemePreset[] = [
             muted: '#1a3a1a',
             mutedForeground: '#a3b89a',
             border: 'rgba(34, 197, 94, 0.2)',
+            destructive: '#ef4444',
+            destructiveForeground: '#ffffff',
         },
         tiles: {
             tile1: 'rgba(34, 197, 94, 0.15)',
@@ -79,6 +83,8 @@ export const themePresets: ThemePreset[] = [
             muted: '#164e63',
             mutedForeground: '#94a3b8',
             border: 'rgba(14, 165, 233, 0.2)',
+            destructive: '#ef4444',
+            destructiveForeground: '#ffffff',
         },
         tiles: {
             tile1: 'rgba(14, 165, 233, 0.15)',
@@ -106,6 +112,8 @@ export const themePresets: ThemePreset[] = [
             muted: '#f4f4f5',
             mutedForeground: '#71717a',
             border: 'rgba(0, 0, 0, 0.08)',
+            destructive: '#ef4444',
+            destructiveForeground: '#ffffff',
         },
         tiles: {
             tile1: 'rgba(0, 0, 0, 0.03)',
@@ -133,6 +141,8 @@ export const themePresets: ThemePreset[] = [
             muted: '#2e1a47',
             mutedForeground: '#a78bfa',
             border: 'rgba(168, 85, 247, 0.2)',
+            destructive: '#ef4444',
+            destructiveForeground: '#ffffff',
         },
         tiles: {
             tile1: 'rgba(168, 85, 247, 0.15)',
@@ -160,6 +170,8 @@ export const themePresets: ThemePreset[] = [
             muted: '#262626',
             mutedForeground: '#a1a1aa',
             border: 'rgba(244, 63, 94, 0.25)',
+            destructive: '#ef4444',
+            destructiveForeground: '#ffffff',
         },
         tiles: {
             tile1: 'rgba(244, 63, 94, 0.12)',
@@ -205,6 +217,8 @@ function getDefaultThemeSafe(): ThemePreset {
                 muted: '#f4f4f5',
                 mutedForeground: '#71717a',
                 border: 'rgba(0, 0, 0, 0.08)',
+                destructive: '#ef4444',
+                destructiveForeground: '#ffffff',
             },
             tiles: {
                 tile1: 'rgba(0, 0, 0, 0.03)',

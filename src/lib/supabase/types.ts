@@ -16,6 +16,8 @@ export interface Profile {
     last_login: string | null;
     country: string | null;
     timezone: string | null;
+    avatar_url: string | null;
+    provider: string;
     created_at: string;
     updated_at: string;
 }
@@ -106,6 +108,8 @@ export interface Database {
                     last_login?: string | null;
                     country?: string | null;
                     timezone?: string | null;
+                    avatar_url?: string | null;
+                    provider?: string;
                     updated_at?: string;
                 };
             };

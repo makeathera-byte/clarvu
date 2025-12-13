@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
-import { LayoutDashboard, Timer, Settings, LogOut, Menu, X, BarChart3, Sparkles, Shield } from 'lucide-react';
+import { LayoutDashboard, Timer, Settings, LogOut, Menu, X, BarChart3, Sparkles, Shield, Target } from 'lucide-react';
 import { logoutAction } from '@/app/auth/login/actions';
 import { NotificationBadge } from '@/components/notifications';
 import { ConnectionStatusIndicator } from '@/components/realtime';
@@ -19,6 +19,7 @@ const getNavItems = (isAdmin: boolean) => [
     { href: '/dashboard/routine', label: 'Routine', icon: Sparkles },
     { href: '/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/timer', label: 'Timer', icon: Timer },
+    { href: '/goals', label: 'Goals', icon: Target },
     { href: '/settings/theme', label: 'Settings', icon: Settings },
     ...(isAdmin ? [{ href: '/ppadminpp', label: 'Admin', icon: Shield }] : []),
 ];
@@ -89,16 +90,20 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
                                         whileTap={{ scale: 0.95 }}
                                         className="relative px-4 py-2 rounded-xl flex items-center gap-2"
                                         style={{
-                                            color: active
-                                                ? currentTheme.colors.primary
-                                                : currentTheme.colors.mutedForeground,
+                                            color: item.label === 'Goals'
+                                                ? (active ? '#16a34a' : '#22c55e') // Green for Goals
+                                                : (active ? currentTheme.colors.primary : currentTheme.colors.mutedForeground),
                                         }}
                                     >
                                         {active && (
                                             <motion.div
                                                 layoutId="navbar-indicator"
                                                 className="absolute inset-0 rounded-xl"
-                                                style={{ backgroundColor: `${currentTheme.colors.primary}15` }}
+                                                style={{
+                                                    backgroundColor: item.label === 'Goals'
+                                                        ? '#22c55e15' // Green background tint
+                                                        : `${currentTheme.colors.primary}15`
+                                                }}
                                                 transition={{ type: 'spring', duration: 0.5 }}
                                             />
                                         )}
@@ -180,10 +185,12 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
                                             <div
                                                 className="flex items-center gap-3 px-4 py-3 rounded-xl"
                                                 style={{
-                                                    backgroundColor: active ? `${currentTheme.colors.primary}15` : 'transparent',
+                                                    backgroundColor: active
+                                                        ? (item.label === 'Goals' ? '#22c55e15' : `${currentTheme.colors.primary}15`)
+                                                        : 'transparent',
                                                     color: active
-                                                        ? currentTheme.colors.primary
-                                                        : currentTheme.colors.foreground,
+                                                        ? (item.label === 'Goals' ? '#16a34a' : currentTheme.colors.primary)
+                                                        : (item.label === 'Goals' ? '#22c55e' : currentTheme.colors.foreground),
                                                 }}
                                             >
                                                 <Icon className="w-5 h-5" />

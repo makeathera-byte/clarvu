@@ -21,7 +21,14 @@ if (typeof window !== 'undefined') {
 // Use fallback values to prevent crashes, but operations will fail gracefully
 export const supabaseClient = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true, // Enable OAuth callback detection
+    },
+  }
 );
 
 // Legacy export for backward compatibility

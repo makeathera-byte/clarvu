@@ -32,7 +32,7 @@ interface TodayTaskListProps {
 
 export function TodayTaskList({ tasks, categories, compact = false }: TodayTaskListProps) {
     const { currentTheme } = useTheme();
-    const { openTimer, taskId: activeTaskId } = useTimerStore();
+    const { startTaskTimer, taskId: activeTaskId } = useTimerStore();
 
     // Sort tasks: in_progress first, then scheduled, then completed
     const sortedTasks = [...tasks].sort((a, b) => {
@@ -61,13 +61,13 @@ export function TodayTaskList({ tasks, categories, compact = false }: TodayTaskL
     const handleStartTask = async (task: Task) => {
         const result = await startTaskAction(task.id);
         if (result.success) {
-            openTimer(task.id, task.title, 30 * 60);
+            startTaskTimer(task.id, task.title, 30 * 60);
         }
     };
 
     // Handle viewing timer
     const handleViewTimer = (task: Task) => {
-        openTimer(task.id, task.title, 30 * 60);
+        startTaskTimer(task.id, task.title, 30 * 60);
     };
 
     if (tasks.length === 0) {

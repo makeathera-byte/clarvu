@@ -11,7 +11,7 @@ import { Plus, Clock } from 'lucide-react';
 export function QuickTaskBar() {
     const { currentTheme } = useTheme();
     const categories = useCategoryStore((s) => s.categories);
-    const { openTimer } = useTimerStore();
+    const { startTaskTimer } = useTimerStore();
 
     const [title, setTitle] = useState('');
     const [startTime, setStartTime] = useState('');
@@ -82,7 +82,7 @@ export function QuickTaskBar() {
                 // Start the task immediately
                 const startResult = await startTaskAction(result.task.id);
                 if (startResult.success) {
-                    openTimer(result.task.id, result.task.title, 30 * 60);
+                    startTaskTimer(result.task.id, result.task.title, 30 * 60);
                 }
 
                 // Reset form
@@ -95,7 +95,7 @@ export function QuickTaskBar() {
         } finally {
             setIsLoading(false);
         }
-    }, [title, startTime, categoryId, openTimer]);
+    }, [title, startTime, categoryId, startTaskTimer]);
 
     // Handle enter key
     const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -14,6 +14,8 @@ import { User, Mail, ArrowRight, ArrowLeft, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { signUpAction } from './actions';
 import type { Country } from '@/lib/utils/countries';
+import { supabaseClient } from '@/lib/supabase/client';
+import { GoogleIcon } from '@/components/auth/GoogleIcon';
 
 interface FormErrors {
     fullName?: string;
@@ -175,6 +177,31 @@ export default function SignupPage() {
         }
     }, [validateForm, fullName, email, password, selectedTheme, selectedCountry]);
 
+    const handleGoogleSignIn = useCallback(async () => {
+        setIsLoading(true);
+        setErrors({});
+
+        try {
+            const redirectTo = `${window.location.origin}/auth/callback`;
+            const { error: oauthError } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo,
+                },
+            });
+
+            if (oauthError) {
+                setErrors({ general: oauthError.message || 'Google sign-in failed' });
+                setIsLoading(false);
+            }
+            // If successful, the user will be redirected to Google, then to /auth/callback
+        } catch (err) {
+            console.error('Google sign-in error:', err);
+            setErrors({ general: 'An unexpected error occurred' });
+            setIsLoading(false);
+        }
+    }, []);
+
     // Prevent rendering until mounted to avoid hydration issues
     if (!mounted) {
         return (
@@ -316,6 +343,63 @@ export default function SignupPage() {
                                 selectedThemeId={selectedTheme}
                                 onSelect={handleThemeSelect}
                                 error={errors.theme}
+                            />
+                        </div>
+
+                        {/* Divider */}
+                        <div className="flex items-center gap-4 pt-2">
+                            <div
+                                className="flex-1 h-px"
+                                style={{ backgroundColor: currentTheme.colors.border }}
+                            />
+                            <span
+                                className="text-xs uppercase tracking-wider"
+                                style={{ color: currentTheme.colors.mutedForeground }}
+                            >
+                                or
+                            </span>
+                            <div
+                                className="flex-1 h-px"
+                                style={{ backgroundColor: currentTheme.colors.border }}
+                            />
+                        </div>
+
+                        {/* Google Sign In Button */}
+                        <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            <Button
+                                type="button"
+                                onClick={handleGoogleSignIn}
+                                disabled={isLoading}
+                                className="w-full h-12 rounded-xl text-base font-medium flex items-center justify-center gap-3 border-2"
+                                style={{
+                                    backgroundColor: currentTheme.colors.background,
+                                    color: currentTheme.colors.foreground,
+                                    borderColor: currentTheme.colors.border,
+                                }}
+                            >
+                                <GoogleIcon className="w-5 h-5" />
+                                Continue with Google
+                            </Button>
+                        </motion.div>
+
+                        {/* Divider */}
+                        <div className="flex items-center gap-4 pt-2">
+                            <div
+                                className="flex-1 h-px"
+                                style={{ backgroundColor: currentTheme.colors.border }}
+                            />
+                            <span
+                                className="text-xs uppercase tracking-wider"
+                                style={{ color: currentTheme.colors.mutedForeground }}
+                            >
+                                or
+                            </span>
+                            <div
+                                className="flex-1 h-px"
+                                style={{ backgroundColor: currentTheme.colors.border }}
                             />
                         </div>
 

@@ -5,9 +5,11 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { useTimerStore, formatTime } from '@/lib/timer/useTimerStore';
+import { useTaskStore } from '@/lib/store/useTaskStore';
 import { useSoundEngine } from '@/lib/sounds';
 import { endTaskAction } from '@/app/dashboard/actions';
-import { Clock, Square, Home } from 'lucide-react';
+import { showBrowserNotification } from '@/lib/notifications/push';
+import { Clock, Home, Play, Pause, RotateCcw, CheckCircle } from 'lucide-react';
 
 export function FocusTimer() {
     const router = useRouter();
@@ -19,6 +21,8 @@ export function FocusTimer() {
         isRunning,
         decrementTimer,
         closeTimer,
+        pauseTimer,
+        resumeTimer,
     } = useTimerStore();
     const { stopAllSounds } = useSoundEngine();
 
@@ -52,27 +56,73 @@ export function FocusTimer() {
         return () => clearInterval(interval);
     }, [isRunning, remainingSeconds, decrementTimer]);
 
-    // Auto-end when timer reaches 0
+    // Auto-complete when timer reaches 0
     useEffect(() => {
         if (remainingSeconds <= 0 && taskId && !isEnding) {
-            handleEndSession();
+            handleCompleteTask();
         }
     }, [remainingSeconds, taskId, isEnding]);
 
-    const handleEndSession = async () => {
+    // Calculate total seconds from timer store
+    const totalSeconds = (() => {
+        const state = useTimerStore.getState();
+        if (state.startedAt && state.endsAt) {
+            return Math.round((state.endsAt.getTime() - state.startedAt.getTime()) / 1000);
+        }
+        return 30 * 60;
+    })();
+
+    // Handle complete task with focus time
+    const handleCompleteTask = async () => {
         if (!taskId || isEnding) return;
 
         setIsEnding(true);
         stopAllSounds();
 
         try {
-            await endTaskAction(taskId);
+            // Calculate actual focused time
+            const state = useTimerStore.getState();
+            let actualFocusMinutes = 0;
+
+            if (state.startedAt && state.endsAt) {
+                const initialDuration = Math.round(
+                    (state.endsAt.getTime() - state.startedAt.getTime()) / 1000
+                );
+                const actualFocusSeconds = initialDuration - remainingSeconds;
+                actualFocusMinutes = Math.round(actualFocusSeconds / 60);
+            }
+
+            const result = await endTaskAction(taskId, actualFocusMinutes);
+            if (result.success) {
+                // Update local task store
+                const taskStore = useTaskStore.getState();
+                const existingTask = taskStore.tasks.find(t => t.id === taskId);
+                if (existingTask) {
+                    taskStore.addOrUpdate({
+                        ...existingTask,
+                        status: 'completed',
+                        end_time: new Date().toISOString(),
+                        duration_minutes: actualFocusMinutes,
+                    } as any);
+                }
+
+                showBrowserNotification('Task Completed! ✅', {
+                    body: `Great work! Logged ${actualFocusMinutes} minutes of focus time.`,
+                    tag: 'task-complete',
+                });
+            }
         } catch (error) {
-            console.error('Failed to end task:', error);
+            console.error('Failed to complete task:', error);
         }
 
         closeTimer();
         router.push('/dashboard');
+    };
+
+    // Handle reset (cancel timer)
+    const handleReset = () => {
+        stopAllSounds();
+        closeTimer();
     };
 
     const handleGoHome = () => {
@@ -112,8 +162,7 @@ export function FocusTimer() {
     }
 
     // Calculate progress for visual indicator
-    const maxSeconds = 30 * 60; // 30 minutes
-    const progress = Math.max(0, Math.min(1, remainingSeconds / maxSeconds));
+    const progress = Math.max(0, Math.min(1, remainingSeconds / totalSeconds));
 
     return (
         <motion.div
@@ -180,7 +229,6 @@ export function FocusTimer() {
                             backgroundColor: currentTheme.colors.primary,
                             width: `${progress * 100}%`,
                         }}
-                        initial={{ width: '100%' }}
                         animate={{ width: `${progress * 100}%` }}
                         transition={{ duration: 0.5 }}
                     />
@@ -205,39 +253,92 @@ export function FocusTimer() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="flex flex-col sm:flex-row items-center justify-center gap-4"
+                className="flex flex-col items-center gap-4"
             >
+                {/* Primary row: Play/Pause + Reset */}
+                <div className="flex items-center gap-3">
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => isRunning ? pauseTimer() : resumeTimer()}
+                        className="flex items-center gap-2 px-8 py-4 rounded-2xl font-medium text-lg"
+                        style={{
+                            backgroundColor: currentTheme.colors.primary,
+                            color: '#fff',
+                            boxShadow: `0 8px 25px ${currentTheme.colors.primary}40`,
+                        }}
+                    >
+                        {isRunning ? (
+                            <>
+                                <Pause className="w-5 h-5" />
+                                Pause
+                            </>
+                        ) : (
+                            <>
+                                <Play className="w-5 h-5" />
+                                {remainingSeconds < totalSeconds ? 'Resume' : 'Start'}
+                            </>
+                        )}
+                    </motion.button>
+
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleReset}
+                        className="p-4 rounded-2xl"
+                        style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                        }}
+                        title="Reset timer"
+                    >
+                        <RotateCcw className="w-5 h-5" />
+                    </motion.button>
+                </div>
+
+                {/* Complete Task button */}
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={handleEndSession}
+                    onClick={handleCompleteTask}
                     disabled={isEnding}
-                    className="flex items-center gap-2 px-8 py-4 rounded-2xl font-medium transition-all"
+                    className="flex items-center gap-2 px-8 py-4 rounded-2xl font-medium w-full max-w-xs justify-center"
                     style={{
-                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                        color: '#ef4444',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        backgroundColor: '#22c55e',
+                        color: '#fff',
+                        boxShadow: '0 8px 25px rgba(34, 197, 94, 0.4)',
                     }}
                 >
-                    <Square className="w-4 h-4" />
-                    {isEnding ? 'Ending...' : 'End Session'}
+                    {isEnding ? (
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                            className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                        />
+                    ) : (
+                        <CheckCircle className="w-5 h-5" />
+                    )}
+                    {isEnding ? 'Completing...' : 'Complete Task'}
                 </motion.button>
 
+                {/* Minimize button */}
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleGoHome}
-                    className="flex items-center gap-2 px-6 py-4 rounded-2xl font-medium transition-all"
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-sm"
                     style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         color: 'rgba(255, 255, 255, 0.7)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
                     }}
                 >
                     <Home className="w-4 h-4" />
-                    Minimize
+                    Back to Dashboard
                 </motion.button>
             </motion.div>
         </motion.div>
     );
 }
+

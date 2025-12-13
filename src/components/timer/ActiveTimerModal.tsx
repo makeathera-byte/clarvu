@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { useTimerStore, formatTime } from '@/lib/timer/useTimerStore';
+import { useTaskStore } from '@/lib/store/useTaskStore';
 import { endTaskAction } from '@/app/dashboard/actions';
-import { X, Square, Clock, Maximize2 } from 'lucide-react';
+import { showBrowserNotification } from '@/lib/notifications/push';
+import { X, Clock, Maximize2, CheckCircle, Play, Pause, RotateCcw } from 'lucide-react';
 
 export function ActiveTimerModal() {
     const router = useRouter();
@@ -19,6 +21,8 @@ export function ActiveTimerModal() {
         remainingSeconds,
         decrementTimer,
         closeTimer,
+        pauseTimer,
+        resumeTimer,
     } = useTimerStore();
 
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -50,20 +54,57 @@ export function ActiveTimerModal() {
         }
     }, [remainingSeconds, taskId, isRunning]);
 
-    // Handle ending the task
+    // Handle ending the task (cancel without completing)
     const handleEndTask = useCallback(async () => {
+        if (!taskId || isEnding) return;
+        setIsEnding(true);
+        closeTimer();
+        setIsEnding(false);
+    }, [taskId, closeTimer, isEnding]);
+
+    // Handle completing the task with focus time
+    const handleCompleteTask = useCallback(async () => {
         if (!taskId || isEnding) return;
 
         setIsEnding(true);
         try {
-            const result = await endTaskAction(taskId);
+            // Calculate actual focused time
+            const state = useTimerStore.getState();
+            let actualFocusMinutes = 0;
+
+            if (state.startedAt && state.endsAt) {
+                const initialDuration = Math.round(
+                    (state.endsAt.getTime() - state.startedAt.getTime()) / 1000
+                );
+                const actualFocusSeconds = initialDuration - remainingSeconds;
+                actualFocusMinutes = Math.round(actualFocusSeconds / 60);
+            }
+
+            const result = await endTaskAction(taskId, actualFocusMinutes);
             if (result.success) {
+                // Update local task store
+                const taskStore = useTaskStore.getState();
+                const existingTask = taskStore.tasks.find(t => t.id === taskId);
+                if (existingTask) {
+                    taskStore.addOrUpdate({
+                        ...existingTask,
+                        status: 'completed',
+                        end_time: new Date().toISOString(),
+                        duration_minutes: actualFocusMinutes,
+                    } as any);
+                }
+
+                showBrowserNotification('Task Completed! ✅', {
+                    body: `Great work! Logged ${actualFocusMinutes} minutes of focus time.`,
+                    tag: 'task-complete',
+                });
+
                 closeTimer();
             }
         } finally {
             setIsEnding(false);
         }
-    }, [taskId, closeTimer, isEnding]);
+    }, [taskId, closeTimer, isEnding, remainingSeconds]);
 
     // Format current time
     const formatCurrentTime = () => {
@@ -75,8 +116,14 @@ export function ActiveTimerModal() {
         });
     };
 
-    // Calculate progress percentage
-    const totalSeconds = 30 * 60;
+    // Calculate progress percentage using actual timer duration
+    const totalSeconds = (() => {
+        const state = useTimerStore.getState();
+        if (state.startedAt && state.endsAt) {
+            return Math.round((state.endsAt.getTime() - state.startedAt.getTime()) / 1000);
+        }
+        return 30 * 60;
+    })();
     const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
 
     if (!isOpen) return null;
@@ -219,17 +266,60 @@ export function ActiveTimerModal() {
                             </h2>
 
                             {/* Action buttons */}
-                            <div className="flex justify-center gap-4">
+                            <div className="flex flex-col items-center gap-4">
+                                {/* Primary row: Play/Pause + Reset */}
+                                <div className="flex items-center gap-3">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => isRunning ? pauseTimer() : resumeTimer()}
+                                        className="flex items-center gap-2 px-8 py-4 rounded-2xl font-medium text-lg"
+                                        style={{
+                                            backgroundColor: currentTheme.colors.primary,
+                                            color: '#fff',
+                                            boxShadow: `0 8px 25px ${currentTheme.colors.primary}40`,
+                                        }}
+                                    >
+                                        {isRunning ? (
+                                            <>
+                                                <Pause className="w-5 h-5" />
+                                                Pause
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Play className="w-5 h-5" />
+                                                {remainingSeconds < totalSeconds ? 'Resume' : 'Start'}
+                                            </>
+                                        )}
+                                    </motion.button>
+
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={closeTimer}
+                                        className="p-4 rounded-2xl"
+                                        style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                            color: 'rgba(255, 255, 255, 0.8)',
+                                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                                        }}
+                                        title="Reset timer"
+                                    >
+                                        <RotateCcw className="w-5 h-5" />
+                                    </motion.button>
+                                </div>
+
+                                {/* Complete Task button */}
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    onClick={handleEndTask}
+                                    onClick={handleCompleteTask}
                                     disabled={isEnding}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-2xl font-medium"
+                                    className="flex items-center gap-2 px-6 py-3 rounded-2xl font-medium w-full justify-center"
                                     style={{
-                                        backgroundColor: currentTheme.colors.primary,
+                                        backgroundColor: '#22c55e',
                                         color: '#fff',
-                                        boxShadow: `0 8px 25px ${currentTheme.colors.primary}40`,
+                                        boxShadow: '0 8px 25px rgba(34, 197, 94, 0.4)',
                                     }}
                                 >
                                     {isEnding ? (
@@ -239,48 +329,51 @@ export function ActiveTimerModal() {
                                             className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
                                         />
                                     ) : (
-                                        <Square className="w-4 h-4" />
+                                        <CheckCircle className="w-4 h-4" />
                                     )}
-                                    {isEnding ? 'Ending...' : 'End Now'}
+                                    Complete Task
                                 </motion.button>
 
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => {
-                                        closeTimer();
-                                        router.push('/focus');
-                                    }}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-2xl font-medium"
-                                    style={{
-                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                        color: 'rgba(255, 255, 255, 0.8)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                    }}
-                                >
-                                    <Maximize2 className="w-4 h-4" />
-                                    Focus Mode
-                                </motion.button>
+                                {/* Secondary row: Focus Mode + Minimize */}
+                                <div className="flex items-center gap-3">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => {
+                                            closeTimer();
+                                            router.push('/timer');
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm"
+                                        style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                        }}
+                                    >
+                                        <Maximize2 className="w-3.5 h-3.5" />
+                                        Focus Mode
+                                    </motion.button>
 
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={closeTimer}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-2xl font-medium"
-                                    style={{
-                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                        color: 'rgba(255, 255, 255, 0.8)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                    }}
-                                >
-                                    <X className="w-4 h-4" />
-                                    Minimize
-                                </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleEndTask}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm"
+                                        style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                        }}
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                        Minimize
+                                    </motion.button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence >
     );
 }

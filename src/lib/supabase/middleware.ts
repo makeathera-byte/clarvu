@@ -61,6 +61,7 @@ export async function updateSession(request: NextRequest) {
             data: { user },
         } = await supabase.auth.getUser();
 
+    const isAuthCallback = request.nextUrl.pathname === '/auth/callback';
     const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
     const isProtectedRoute =
         request.nextUrl.pathname.startsWith('/dashboard') ||
@@ -70,6 +71,11 @@ export async function updateSession(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/ppadminpp') ||
         request.nextUrl.pathname.startsWith('/settings');
 
+    // Allow auth callback to proceed (it handles its own redirect logic)
+    if (isAuthCallback) {
+        return supabaseResponse;
+    }
+
     // Redirect unauthenticated users from protected routes to login
     if (!user && isProtectedRoute) {
         const url = request.nextUrl.clone();
@@ -77,8 +83,8 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
-        // Redirect authenticated users from auth routes to dashboard
-        if (user && isAuthRoute) {
+        // Redirect authenticated users from auth routes to dashboard (except callback)
+        if (user && isAuthRoute && !isAuthCallback) {
             const url = request.nextUrl.clone();
             url.pathname = '/dashboard';
             return NextResponse.redirect(url);

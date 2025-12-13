@@ -8,7 +8,17 @@ export interface EndTaskResult {
     error?: string;
 }
 
-export async function endTaskAction(taskId: string, endedAt?: string): Promise<EndTaskResult> {
+/**
+ * End a task and mark it as completed
+ * @param taskId - The task ID to end
+ * @param actualFocusMinutes - The actual focused time in minutes (from timer)
+ * @param endedAt - Optional end time override
+ */
+export async function endTaskAction(
+    taskId: string,
+    actualFocusMinutes?: number,
+    endedAt?: string
+): Promise<EndTaskResult> {
     const supabase = await createClient();
 
     // Get current user
@@ -19,21 +29,27 @@ export async function endTaskAction(taskId: string, endedAt?: string): Promise<E
 
     const end = endedAt ? new Date(endedAt) : new Date();
 
-    // Get task to calculate duration
-    const { data: task } = await (supabase as any)
-        .from('tasks')
-        .select('start_time')
-        .eq('id', taskId)
-        .eq('user_id', user.id)
-        .single();
+    // Use actual focus time from timer if provided, otherwise calculate from timestamps
+    let durationMinutes = actualFocusMinutes;
 
-    let durationMinutes = 30;
-    if (task?.start_time) {
-        const startTime = new Date(task.start_time);
-        durationMinutes = Math.round((end.getTime() - startTime.getTime()) / 60000);
+    if (durationMinutes === undefined) {
+        // Fallback: calculate from start_time to end_time
+        const { data: task } = await (supabase as any)
+            .from('tasks')
+            .select('start_time')
+            .eq('id', taskId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (task?.start_time) {
+            const startTime = new Date(task.start_time);
+            durationMinutes = Math.round((end.getTime() - startTime.getTime()) / 60000);
+        } else {
+            durationMinutes = 0;
+        }
     }
 
-    // Update task to completed
+    // Update task to completed with actual focus time
     const { error: taskError } = await (supabase as any)
         .from('tasks')
         .update({
@@ -60,3 +76,4 @@ export async function endTaskAction(taskId: string, endedAt?: string): Promise<E
 
     return { success: true };
 }
+
