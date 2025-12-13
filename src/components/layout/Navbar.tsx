@@ -9,6 +9,7 @@ import { LayoutDashboard, Timer, Settings, LogOut, Menu, X, BarChart3, Sparkles,
 import { logoutAction } from '@/app/auth/login/actions';
 import { NotificationBadge } from '@/components/notifications';
 import { ConnectionStatusIndicator } from '@/components/realtime';
+import { Logo } from '@/components/layout/Logo';
 
 interface NavbarProps {
     isAdmin?: boolean;
@@ -61,20 +62,7 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
                 >
                     {/* Logo */}
                     <Link href="/dashboard" className="flex items-center gap-2">
-                        <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{
-                                background: `linear-gradient(135deg, ${currentTheme.colors.primary}, ${currentTheme.colors.accent})`,
-                            }}
-                        >
-                            <span className="text-sm font-bold text-white">C</span>
-                        </div>
-                        <span
-                            className="font-semibold hidden sm:block"
-                            style={{ color: currentTheme.colors.foreground }}
-                        >
-                            Clarvu
-                        </span>
+                        <Logo width={120} height={32} className="object-contain" />
                     </Link>
 
                     {/* Desktop Navigation */}

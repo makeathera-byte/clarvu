@@ -16,6 +16,7 @@ import { signUpAction } from './actions';
 import type { Country } from '@/lib/utils/countries';
 import { supabaseClient } from '@/lib/supabase/client';
 import { GoogleIcon } from '@/components/auth/GoogleIcon';
+import { Logo } from '@/components/layout/Logo';
 
 interface FormErrors {
     fullName?: string;
@@ -45,8 +46,8 @@ export default function SignupPage() {
         },
         isDark: false,
     };
-    const setTheme = themeContext?.setTheme || (() => {});
-    
+    const setTheme = themeContext?.setTheme || (() => { });
+
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -66,7 +67,7 @@ export default function SignupPage() {
     // Load countries and auto-detect country on mount (client-side only)
     useEffect(() => {
         if (!mounted) return;
-        
+
         // Dynamically import to avoid SSR issues
         import('@/lib/utils/countries').then(({ countries, getDefaultCountry }) => {
             setCountriesList(countries);
@@ -167,10 +168,10 @@ export default function SignupPage() {
                 name: error instanceof Error ? error.name : undefined,
                 error: error,
             });
-            const errorMessage = error instanceof Error 
-                ? error.message 
-                : typeof error === 'string' 
-                    ? error 
+            const errorMessage = error instanceof Error
+                ? error.message
+                : typeof error === 'string'
+                    ? error
                     : JSON.stringify(error);
             setErrors({ general: errorMessage || 'An unexpected error occurred' });
             setIsLoading(false);
@@ -224,22 +225,8 @@ export default function SignupPage() {
                     transition={{ duration: 0.5 }}
                     className="text-center mb-8"
                 >
-                    <div
-                        className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 relative overflow-hidden"
-                        style={{
-                            background: `linear-gradient(135deg, ${currentTheme.colors.primary}, ${currentTheme.colors.accent})`,
-                            boxShadow: `0 8px 32px ${currentTheme.colors.primary}40`,
-                        }}
-                    >
-                        <span className="text-2xl font-bold text-white relative z-10">C</span>
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
-                            className="absolute inset-0 opacity-30"
-                            style={{
-                                background: `conic-gradient(from 0deg, transparent, ${currentTheme.colors.accent}, transparent)`,
-                            }}
-                        />
+                    <div className="relative w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <Logo width={64} height={64} className="object-contain" />
                     </div>
                     <h1
                         className="text-3xl font-bold mb-2"
