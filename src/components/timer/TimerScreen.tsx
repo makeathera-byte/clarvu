@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { useTimerStore, formatTime } from '@/lib/timer/useTimerStore';
 import { useTaskStore } from '@/lib/store/useTaskStore';
-import { endTaskAction, logFocusSessionAction } from '@/app/dashboard/actions';
+import { endTaskAction, logFocusSessionAction, updateTaskAction } from '@/app/dashboard/actions';
 import { showBrowserNotification } from '@/lib/notifications/push';
 import { Play, Pause, RotateCcw, Home, CheckCircle, Clock, Coffee, Zap, Timer, Settings, MoreVertical, Plus, ArrowUp } from 'lucide-react';
 
@@ -46,6 +46,14 @@ export function TimerScreen() {
         pauseTimer,
         resumeTimer,
         decrementTimer,
+        // Task count-up state
+        taskCountUpId,
+        taskCountUpTitle,
+        taskCountUpSeconds,
+        taskCountUpIsRunning,
+        pauseTaskCountUp,
+        resumeTaskCountUp,
+        stopTaskCountUp,
         // Focus timer state (shared with Dashboard)
         focusSeconds,
         focusTotalSeconds,
@@ -102,8 +110,9 @@ export function TimerScreen() {
 
     // Determine which timer mode we're in
     const isTaskMode = !!taskId;
-    const seconds = isTaskMode ? taskRemainingSeconds : (countUpMode ? countUpSeconds : localSeconds);
-    const isRunning = isTaskMode ? isTaskRunning : isLocalRunning;
+    const isTaskCountUpMode = !!taskCountUpId;
+    const seconds = isTaskMode ? taskRemainingSeconds : (isTaskCountUpMode ? taskCountUpSeconds : (countUpMode ? countUpSeconds : localSeconds));
+    const isRunning = isTaskMode ? isTaskRunning : (isTaskCountUpMode ? taskCountUpIsRunning : isLocalRunning);
 
     // Calculate total seconds for progress bar
     const totalSeconds = (() => {
@@ -166,16 +175,28 @@ export function TimerScreen() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [menuOpen]);
 
+    // Task count-up timer effect (for individual task timing)
+    useEffect(() => {
+        if (!isTaskCountUpMode || !taskCountUpIsRunning) return;
+
+        const interval = setInterval(() => {
+            const { incrementTaskCountUp } = useTimerStore.getState();
+            incrementTaskCountUp();
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [isTaskCountUpMode, taskCountUpIsRunning]);
+
     // Count-up timer effect (stopwatch mode) - using store action
     useEffect(() => {
-        if (!countUpMode || !isLocalRunning || isTaskMode) return;
+        if (!countUpMode || !isLocalRunning || isTaskMode || isTaskCountUpMode) return;
 
         const interval = setInterval(() => {
             incrementCountUp();
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [countUpMode, isLocalRunning, isTaskMode, incrementCountUp]);
+    }, [countUpMode, isLocalRunning, isTaskMode, isTaskCountUpMode, incrementCountUp]);
 
     // Menu handler functions - using store actions
     const handleAddTime = (addSecs: number) => {
@@ -300,6 +321,12 @@ export function TimerScreen() {
             } else {
                 resumeTimer();
             }
+        } else if (isTaskCountUpMode) {
+            if (taskCountUpIsRunning) {
+                pauseTaskCountUp();
+            } else {
+                resumeTaskCountUp();
+            }
         } else {
             if (focusIsRunning) {
                 pauseFocusTimer();
@@ -307,6 +334,42 @@ export function TimerScreen() {
                 startFocusTimer();
             }
         }
+    };
+
+    const handleCompleteTaskCountUp = async () => {
+        if (!taskCountUpId) return;
+
+        // Stop the count-up timer and get elapsed time
+        const elapsedSeconds = stopTaskCountUp();
+        const elapsedMinutes = Math.round(elapsedSeconds / 60);
+
+        // Complete the task with the elapsed time
+        const result = await updateTaskAction({
+            taskId: taskCountUpId,
+            status: 'completed',
+            durationMinutes: elapsedMinutes > 0 ? elapsedMinutes : undefined,
+        });
+
+        if (result.success && result.task) {
+            const taskStore = useTaskStore.getState();
+            taskStore.addOrUpdate(result.task as any);
+        }
+
+        // Log to deep work if meaningful time spent
+        if (elapsedMinutes >= 1) {
+            try {
+                await logFocusSessionAction(elapsedMinutes, 'focus');
+            } catch (e) {
+                console.warn('Failed to log focus session:', e);
+            }
+        }
+
+        showBrowserNotification('Task Completed! ✅', {
+            body: `Great work! Logged ${elapsedMinutes} minutes of focus time.`,
+            tag: 'task-complete',
+        });
+
+        router.push('/dashboard');
     };
 
     const handleReset = () => {
@@ -411,6 +474,7 @@ export function TimerScreen() {
     // Get mode display text
     const getModeText = () => {
         if (isTaskMode) return taskTitle || 'Task Timer';
+        if (isTaskCountUpMode) return taskCountUpTitle || 'Task Count-Up';
         if (countUpMode) return 'Stopwatch';
         if (mode === 'pomodoro') {
             return isBreak
@@ -907,6 +971,26 @@ export function TimerScreen() {
                                 <RotateCcw className="w-5 h-5" />
                             </motion.button>
                         </div>
+
+                        {/* Complete task button - only for task count-up mode */}
+                        {isTaskCountUpMode && (
+                            <motion.button
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={handleCompleteTaskCountUp}
+                                className="px-8 py-3 rounded-2xl font-medium transition-all flex items-center gap-2"
+                                style={{
+                                    backgroundColor: '#22c55e',
+                                    color: '#fff',
+                                    boxShadow: '0 8px 25px rgba(34, 197, 94, 0.4)',
+                                }}
+                            >
+                                <CheckCircle className="w-5 h-5" />
+                                Complete Task ({Math.round(taskCountUpSeconds / 60)}m)
+                            </motion.button>
+                        )}
 
                         {/* Complete Task button (only for task mode) */}
                         {isTaskMode && (
