@@ -58,21 +58,11 @@ export function ThemeProvider({ children, initialThemeId }: ThemeProviderProps) 
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [mounted, setMounted] = useState(false);
 
-    // Load saved theme on mount (client-side only, respects initialThemeId from server)
+    // Load saved theme on mount (client-side only)
     useEffect(() => {
         setMounted(true);
 
-        // If we have an initial theme from server, use it and save to localStorage
-        if (initialThemeId) {
-            const theme = getThemeById(initialThemeId);
-            if (theme) {
-                setCurrentTheme(theme);
-                localStorage.setItem(THEME_STORAGE_KEY, initialThemeId);
-                return;
-            }
-        }
-
-        // Otherwise, try to load from localStorage
+        // Priority 1: Try to load from localStorage (user's most recent toggle selection)
         const savedThemeId = localStorage.getItem(THEME_STORAGE_KEY);
         const savedCustomTheme = localStorage.getItem(CUSTOM_THEME_STORAGE_KEY);
 
@@ -81,15 +71,27 @@ export function ThemeProvider({ children, initialThemeId }: ThemeProviderProps) 
                 const custom = JSON.parse(savedCustomTheme);
                 setCustomThemeState(custom);
                 setIsCustomTheme(true);
+                return; // Use custom theme from localStorage
             } catch {
-                // Invalid custom theme, fallback to preset
+                // Invalid custom theme, continue to load preset
             }
         }
 
-        if (savedThemeId && !savedCustomTheme) {
+        if (savedThemeId) {
             const theme = getThemeById(savedThemeId);
             if (theme) {
                 setCurrentTheme(theme);
+                return; // Use saved theme from localStorage
+            }
+        }
+
+        // Priority 2: Fallback to initialThemeId from server if no localStorage value
+        if (initialThemeId) {
+            const theme = getThemeById(initialThemeId);
+            if (theme) {
+                setCurrentTheme(theme);
+                // Save server theme to localStorage for next time
+                localStorage.setItem(THEME_STORAGE_KEY, initialThemeId);
             }
         }
     }, [initialThemeId]);

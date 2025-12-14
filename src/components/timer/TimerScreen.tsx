@@ -373,7 +373,10 @@ export function TimerScreen() {
     };
 
     const handleReset = () => {
-        if (isTaskMode) {
+        if (isTaskCountUpMode) {
+            // Task count-up mode - stop and clear the task count-up timer
+            stopTaskCountUp();
+        } else if (isTaskMode) {
             closeTimer();
         } else if (countUpMode) {
             // Count-up/stopwatch mode - reset to 0

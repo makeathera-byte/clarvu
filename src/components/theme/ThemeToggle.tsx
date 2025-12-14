@@ -4,13 +4,22 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 
+const PREVIOUS_DARK_THEME_KEY = 'clarvu-previous-dark-theme';
+
 export function ThemeToggle() {
     const { currentTheme, setTheme } = useTheme();
     const isDark = currentTheme.isDark;
 
     const toggleTheme = () => {
-        // Toggle between minimal (light) and neon (dark)
-        setTheme(isDark ? 'minimal' : 'neon');
+        if (currentTheme.id === 'minimal') {
+            // Switching from light to dark - restore previous dark theme
+            const previousDarkTheme = localStorage.getItem(PREVIOUS_DARK_THEME_KEY) || 'neon';
+            setTheme(previousDarkTheme);
+        } else {
+            // Switching from dark to light - save current dark theme for later
+            localStorage.setItem(PREVIOUS_DARK_THEME_KEY, currentTheme.id);
+            setTheme('minimal');
+        }
     };
 
     return (

@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
-import { DashboardHeader, TodayOverview, CategoryPieChart, TodayTimeline, AISummaryCard, DashboardTimer, TaskRow } from '@/components/dashboard';
+import { DashboardHeader, TodayOverview, DashboardTimer, TaskRow } from '@/components/dashboard';
 import { CreateTaskModal, EditTaskModal } from '@/components/tasks';
 import { ActiveTimerModal } from '@/components/timer';
-import { TodayEvents } from '@/components/calendar';
 import { useTimerStore } from '@/lib/timer/useTimerStore';
 import { useTaskStore } from '@/lib/store/useTaskStore';
 import { useCategoryStore } from '@/lib/store/useCategoryStore';
@@ -14,6 +13,12 @@ import { createTaskAction, startTaskAction, updateTaskAction, deleteTaskAction, 
 import { cleanupDuplicateCategories } from '@/app/dashboard/actions/cleanupCategories';
 import { getSuggestionsForUser, recordSuggestionUse, TaskSuggestion } from '@/app/tasks/suggestionsActions';
 import { useTaskAutoStart } from '@/lib/hooks/useTaskAutoStart';
+
+// Lazy load heavy components for better performance
+const CategoryPieChart = lazy(() => import('@/components/dashboard').then(m => ({ default: m.CategoryPieChart })));
+const TodayTimeline = lazy(() => import('@/components/dashboard').then(m => ({ default: m.TodayTimeline })));
+const AISummaryCard = lazy(() => import('@/components/dashboard').then(m => ({ default: m.AISummaryCard })));
+const TodayEvents = lazy(() => import('@/components/calendar').then(m => ({ default: m.TodayEvents })));
 import {
     Timer as TimerIcon,
     Plus,

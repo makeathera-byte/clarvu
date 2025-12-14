@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Lora } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme/ThemeContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+});
+
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -55,11 +62,13 @@ export default function RootLayout({
     return (
       <html lang="en" suppressHydrationWarning>
         <body
-          className={`${inter.variable} font-sans antialiased`}
+          className={`${inter.variable} ${lora.variable} font-sans antialiased`}
         >
           <Suspense fallback={<LoadingFallback />}>
             <ThemeProvider>
-              {children}
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
               <Toaster position="bottom-right" theme="system" />
             </ThemeProvider>
           </Suspense>
@@ -72,7 +81,7 @@ export default function RootLayout({
     console.error('Error in RootLayout:', error);
     return (
       <html lang="en" suppressHydrationWarning>
-        <body className={`${inter.variable} font-sans antialiased`}>
+        <body className={`${inter.variable} ${lora.variable} font-sans antialiased`}>
           <ErrorFallback error={error instanceof Error ? error : new Error('Unknown error')} />
         </body>
       </html>

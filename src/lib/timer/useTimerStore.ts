@@ -296,9 +296,17 @@ export const useTimerStore = create<TimerState>()(
             },
 
             incrementTaskCountUp: () => {
-                set((state) => ({
-                    taskCountUpSeconds: state.taskCountUpSeconds + 1,
-                }));
+                set((state) => {
+                    // Max limit: 12 hours (43,200 seconds)
+                    const MAX_TASK_COUNTUP_SECONDS = 12 * 60 * 60;
+                    if (state.taskCountUpSeconds >= MAX_TASK_COUNTUP_SECONDS) {
+                        // Stop incrementing at max limit
+                        return { taskCountUpIsRunning: false };
+                    }
+                    return {
+                        taskCountUpSeconds: state.taskCountUpSeconds + 1,
+                    };
+                });
             },
 
             stopTaskCountUp: (): number => {

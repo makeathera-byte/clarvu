@@ -362,9 +362,12 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
     const handleReset = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('Reset clicked, isTaskMode:', isTaskMode, 'countUpMode:', countUpMode);
+        console.log('Reset clicked, isTaskMode:', isTaskMode, 'isTaskCountUpMode:', isTaskCountUpMode, 'countUpMode:', countUpMode);
 
-        if (isTaskMode && activeTaskId) {
+        if (isTaskCountUpMode) {
+            // Task count-up mode - stop and clear the task count-up timer
+            stopTaskCountUp();
+        } else if (isTaskMode && activeTaskId) {
             // In task mode - cancel the task (mark as incomplete, clear time data)
             const result = await cancelTaskAction(activeTaskId);
             if (result.success && result.task) {
@@ -975,7 +978,7 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
                     </button>
                 </div>
 
-                {/* Complete Task button - only for task count-up mode */}
+                {/* Complete Task button - for both task timer modes */}
                 {isTaskCountUpMode && (
                     <motion.button
                         initial={{ opacity: 0, y: -10 }}
@@ -992,6 +995,60 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
                     >
                         <CheckCircle className="w-4 h-4" />
                         Complete Task ({Math.round(taskCountUpSeconds / 60)}m)
+                    </motion.button>
+                )}
+                {isTaskMode && !isTaskCountUpMode && (
+                    <motion.button
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={async () => {
+                            if (!activeTaskId) return;
+
+                            // Calculate elapsed time
+                            const state = useTimerStore.getState();
+                            let elapsedMinutes = 0;
+
+                            if (state.startedAt && state.endsAt) {
+                                const initialDuration = Math.round(
+                                    (state.endsAt.getTime() - state.startedAt.getTime()) / 1000
+                                );
+                                const elapsedSeconds = initialDuration - taskRemainingSeconds;
+                                elapsedMinutes = Math.round(elapsedSeconds / 60);
+                            }
+
+                            // Complete the task
+                            const result = await endTaskAction(activeTaskId, elapsedMinutes);
+                            if (result.success) {
+                                const taskStore = useTaskStore.getState();
+                                const existingTask = taskStore.tasks.find(t => t.id === activeTaskId);
+                                if (existingTask) {
+                                    taskStore.addOrUpdate({
+                                        ...existingTask,
+                                        status: 'completed',
+                                        end_time: new Date().toISOString(),
+                                        duration_minutes: elapsedMinutes,
+                                    } as any);
+                                }
+
+                                showBrowserNotification('Task Completed! ✅', {
+                                    body: `Great work! Logged ${elapsedMinutes} minutes of focus time.`,
+                                    tag: 'task-complete',
+                                });
+                            }
+
+                            closeTimer();
+                        }}
+                        className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-medium transition-all mt-3 w-full relative z-10"
+                        style={{
+                            backgroundColor: '#22c55e',
+                            color: '#fff',
+                            boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)',
+                        }}
+                    >
+                        <CheckCircle className="w-4 h-4" />
+                        Complete Task
                     </motion.button>
                 )}
             </div>
