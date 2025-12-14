@@ -210,7 +210,7 @@ export function DashboardClient({
             }
         };
 
-        const debounce = setTimeout(fetchSuggestions, 150);
+        const debounce = setTimeout(fetchSuggestions, 300);
         return () => clearTimeout(debounce);
     }, [newTaskTitle, newTaskCategory]);
 
@@ -223,30 +223,33 @@ export function DashboardClient({
     // Auto-start scheduled tasks when their time arrives
     useTaskAutoStart({
         tasks: tasks as any,
-        onTaskAutoStarted: (task) => {
+        onTaskAutoStarted: useCallback((task: any) => {
             // Update local store when task is auto-started
             taskStore.addOrUpdate({
                 ...task,
                 status: 'in_progress',
                 start_time: new Date().toISOString(),
             } as any);
-        },
+        }, [taskStore]),
     });
 
     // Sort tasks: by status first, then by priority (high > medium > low)
-    const sortedTasks = [...tasks].sort((a, b) => {
-        const statusOrder = { in_progress: 0, scheduled: 1, unscheduled: 2, completed: 3 };
-        const priorityOrder = { high: 0, medium: 1, low: 2 };
+    // Memoized to prevent unnecessary re-sorting on every render
+    const sortedTasks = useMemo(() => {
+        return [...tasks].sort((a, b) => {
+            const statusOrder = { in_progress: 0, scheduled: 1, unscheduled: 2, completed: 3 };
+            const priorityOrder = { high: 0, medium: 1, low: 2 };
 
-        // First sort by status
-        const statusDiff = statusOrder[a.status] - statusOrder[b.status];
-        if (statusDiff !== 0) return statusDiff;
+            // First sort by status
+            const statusDiff = statusOrder[a.status] - statusOrder[b.status];
+            if (statusDiff !== 0) return statusDiff;
 
-        // Then sort by priority (within same status)
-        const aPriority = (a as any).priority || 'medium';
-        const bPriority = (b as any).priority || 'medium';
-        return priorityOrder[aPriority as keyof typeof priorityOrder] - priorityOrder[bPriority as keyof typeof priorityOrder];
-    });
+            // Then sort by priority (within same status)
+            const aPriority = (a as any).priority || 'medium';
+            const bPriority = (b as any).priority || 'medium';
+            return priorityOrder[aPriority as keyof typeof priorityOrder] - priorityOrder[bPriority as keyof typeof priorityOrder];
+        });
+    }, [tasks]);
 
     const getCategory = (id: string | null) => categories.find(c => c.id === id);
     const selectedCategory = getCategory(newTaskCategory);
