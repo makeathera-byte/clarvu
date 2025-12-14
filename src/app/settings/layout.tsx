@@ -1,12 +1,10 @@
-'use client';
-
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
+import { createClient } from '@/lib/supabase/server';
 import { getThemeById, defaultTheme } from '@/lib/theme/presets';
 import { ThemeProvider } from '@/lib/theme/ThemeContext';
 import { BackgroundRenderer } from '@/components/theme/BackgroundRenderer';
 import { Navbar } from '@/components/layout/Navbar';
 import { SettingsSidebar } from '@/components/settings';
-import { supabaseClient } from '@/lib/supabase/client';
 
 interface SettingsLayoutProps {
     children: ReactNode;
@@ -16,47 +14,33 @@ interface ProfileTheme {
     theme_name: string | null;
 }
 
-export default function SettingsLayout({ children }: SettingsLayoutProps) {
-    const [initialThemeId, setInitialThemeId] = useState(defaultTheme.id);
-    const [isLoading, setIsLoading] = useState(true);
+export default async function SettingsLayout({ children }: SettingsLayoutProps) {
+    let initialThemeId = defaultTheme.id;
 
-    useEffect(() => {
-        async function loadUserTheme() {
-            try {
-                // Get current user
-                const { data: { user } } = await supabaseClient.auth.getUser();
+    try {
+        const supabase = await createClient();
 
-                // Load theme from profile if user is authenticated
-                if (user) {
-                    const { data: profile } = await supabaseClient
-                        .from('profiles')
-                        .select('theme_name')
-                        .eq('id', user.id)
-                        .single<ProfileTheme>();
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
 
-                    if (profile?.theme_name) {
-                        const theme = getThemeById(profile.theme_name);
-                        if (theme) {
-                            setInitialThemeId(profile.theme_name);
-                        }
-                    }
+        // Load theme from profile if user is authenticated
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('theme_name')
+                .eq('id', user.id)
+                .single<ProfileTheme>();
+
+            if (profile?.theme_name) {
+                const theme = getThemeById(profile.theme_name);
+                if (theme) {
+                    initialThemeId = profile.theme_name;
                 }
-            } catch (error) {
-                console.error('Error in SettingsLayout:', error);
-            } finally {
-                setIsLoading(false);
             }
         }
-
-        loadUserTheme();
-    }, []);
-
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
+    } catch (error) {
+        console.error('Error in SettingsLayout:', error);
+        // Use default theme if there's an error
     }
 
     return (
