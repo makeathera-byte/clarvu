@@ -19,7 +19,7 @@ const getNavItems = (isAdmin: boolean) => [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/routine', label: 'Routine', icon: Sparkles },
     { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { href: '/timer', label: 'Timer', icon: Timer },
+    { href: '/dashboard/timer', label: 'Timer', icon: Timer },
     { href: '/goals', label: 'Goals', icon: Target },
     { href: '/settings/theme', label: 'Settings', icon: Settings },
     ...(isAdmin ? [{ href: '/ppadminpp', label: 'Admin', icon: Shield }] : []),

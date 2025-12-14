@@ -2,6 +2,17 @@
   "buildCommand": "npm run build",
   "framework": "nextjs",
   "installCommand": "npm install",
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 10
+    },
+    "src/app/**/route.ts": {
+      "maxDuration": 10
+    }
+  },
+  "regions": [
+    "iad1"
+  ],
   "headers": [
     {
       "source": "/public/(.*)",
@@ -13,7 +24,34 @@
       ]
     },
     {
-      "source": "/(.*).svg",
+      "source": "/(.*)\\.svg",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.ico",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/_next/static/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

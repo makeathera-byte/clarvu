@@ -61,27 +61,26 @@ export async function updateSession(request: NextRequest) {
             data: { user },
         } = await supabase.auth.getUser();
 
-    const isAuthCallback = request.nextUrl.pathname === '/auth/callback';
-    const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
-    const isProtectedRoute =
-        request.nextUrl.pathname.startsWith('/dashboard') ||
-        request.nextUrl.pathname.startsWith('/analytics') ||
-        request.nextUrl.pathname.startsWith('/timer') ||
-        request.nextUrl.pathname.startsWith('/focus') ||
-        request.nextUrl.pathname.startsWith('/ppadminpp') ||
-        request.nextUrl.pathname.startsWith('/settings');
+        const isAuthCallback = request.nextUrl.pathname === '/auth/callback';
+        const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
+        const isProtectedRoute =
+            request.nextUrl.pathname.startsWith('/dashboard') ||
+            request.nextUrl.pathname.startsWith('/analytics') ||
+            request.nextUrl.pathname.startsWith('/focus') ||
+            request.nextUrl.pathname.startsWith('/ppadminpp') ||
+            request.nextUrl.pathname.startsWith('/settings');
 
-    // Allow auth callback to proceed (it handles its own redirect logic)
-    if (isAuthCallback) {
-        return supabaseResponse;
-    }
+        // Allow auth callback to proceed (it handles its own redirect logic)
+        if (isAuthCallback) {
+            return supabaseResponse;
+        }
 
-    // Redirect unauthenticated users from protected routes to login
-    if (!user && isProtectedRoute) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/auth/login';
-        return NextResponse.redirect(url);
-    }
+        // Redirect unauthenticated users from protected routes to login
+        if (!user && isProtectedRoute) {
+            const url = request.nextUrl.clone();
+            url.pathname = '/auth/login';
+            return NextResponse.redirect(url);
+        }
 
         // Redirect authenticated users from auth routes to dashboard (except callback)
         if (user && isAuthRoute && !isAuthCallback) {

@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
 
+  // Enable React strict mode for better error detection
+  reactStrictMode: true,
+
+  // Output configuration for Vercel
+  output: 'standalone',
+
   // Note: Removed serverExternalPackages for @supabase/ssr to ensure it's bundled
   // Vercel needs these packages to be bundled, not externalized
 
@@ -24,6 +30,9 @@ const nextConfig: NextConfig = {
   // Optimize production builds
   compress: true,
 
+  // Enable component caching for better performance
+  cacheComponents: true,
+
   // PWA support with service worker
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
@@ -39,6 +48,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     // Suppress warnings from transitive dependencies
     resolveAlias: {},
+  },
+
+  // Generate static params for better performance
+  generateBuildId: async () => {
+    // Use git commit hash or timestamp
+    return `build-${Date.now()}`;
   },
 };
 

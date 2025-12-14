@@ -422,7 +422,7 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
                 <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: isHovered ? 1 : 0 }}
-                    onClick={() => router.push('/timer')}
+                    onClick={() => router.push('/dashboard/timer')}
                     className="p-1.5 rounded-md transition-colors hover:bg-black/10"
                     style={{
                         color: currentTheme.colors.mutedForeground,

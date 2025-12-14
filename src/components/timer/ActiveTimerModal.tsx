@@ -341,7 +341,7 @@ export function ActiveTimerModal() {
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => {
                                             closeTimer();
-                                            router.push('/timer');
+                                            router.push('/dashboard/timer');
                                         }}
                                         className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm"
                                         style={{

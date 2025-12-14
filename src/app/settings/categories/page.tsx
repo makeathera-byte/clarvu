@@ -1,7 +1,5 @@
 'use client';
 
-// Force dynamic rendering since parent layout uses cookies for authentication
-export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useTransition } from 'react';
 import { motion } from 'framer-motion';

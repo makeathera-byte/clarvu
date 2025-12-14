@@ -7,7 +7,6 @@ import { Navbar } from '@/components/layout/Navbar';
 import { FocusSoundPanel } from '@/components/focus/FocusSoundPanel';
 import { RealtimeProvider } from '@/components/realtime';
 
-export const dynamic = 'force-dynamic';
 
 interface GoalsLayoutProps {
     children: ReactNode;

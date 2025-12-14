@@ -1,7 +1,5 @@
 'use client';
 
-// Force dynamic rendering since parent layout uses cookies for authentication
-export const dynamic = 'force-dynamic';
 
 import { motion } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';

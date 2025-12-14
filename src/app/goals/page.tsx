@@ -1,22 +1,40 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { GoalsClient } from './GoalsClient';
-import { getActiveGoals, getGoalHistory } from './actions/goalsActions';
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getActiveGoals, getGoalHistory, type Goal } from './actions/goalsActions';
 
-export const dynamic = 'force-dynamic';
+export default function GoalsPage() {
+    const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
+    const [historyGoals, setHistoryGoals] = useState<Goal[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-export default async function GoalsPage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    useEffect(() => {
+        async function loadGoals() {
+            try {
+                const [active, history] = await Promise.all([
+                    getActiveGoals(),
+                    getGoalHistory()
+                ]);
+                setActiveGoals(active);
+                setHistoryGoals(history);
+            } catch (error) {
+                console.error('Error loading goals:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
 
-    if (!user) {
-        redirect('/auth/login');
+        loadGoals();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
     }
-
-    const [activeGoals, historyGoals] = await Promise.all([
-        getActiveGoals(),
-        getGoalHistory()
-    ]);
 
     return (
         <GoalsClient
