@@ -29,6 +29,12 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
     const router = useRouter();
 
     // Get all timer state from store (both task and focus timer)
+    // Explicitly destructure to ensure component re-renders when these change
+    const taskCountUpId = useTimerStore((state) => state.taskCountUpId);
+    const taskCountUpTitle = useTimerStore((state) => state.taskCountUpTitle);
+    const taskCountUpSeconds = useTimerStore((state) => state.taskCountUpSeconds);
+    const taskCountUpIsRunning = useTimerStore((state) => state.taskCountUpIsRunning);
+
     const {
         // Task timer state
         taskId: activeTaskId,
@@ -47,11 +53,7 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
         focusIsRunning,
         countUpMode,
         countUpSeconds,
-        // Task count-up timer state
-        taskCountUpId,
-        taskCountUpTitle,
-        taskCountUpSeconds,
-        taskCountUpIsRunning,
+        // Task count-up actions (state already destructured above for reactivity)
         stopTaskCountUp,
         pauseTaskCountUp,
         resumeTaskCountUp,
