@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { useTimerStore } from '@/lib/timer/useTimerStore';
 import { useTaskStore } from '@/lib/store/useTaskStore';
-import { cancelTaskAction, endTaskAction } from '@/app/dashboard/actions';
+import { cancelTaskAction, endTaskAction, updateTaskAction, logFocusSessionAction } from '@/app/dashboard/actions';
 import { showBrowserNotification } from '@/lib/notifications/push';
 import { Play, Pause, RotateCcw, Clock, Coffee, Zap, Maximize2, CheckCircle, MoreVertical, Plus, Timer, ArrowUp } from 'lucide-react';
 
@@ -47,6 +47,14 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
         focusIsRunning,
         countUpMode,
         countUpSeconds,
+        // Task count-up timer state
+        taskCountUpId,
+        taskCountUpTitle,
+        taskCountUpSeconds,
+        taskCountUpIsRunning,
+        stopTaskCountUp,
+        pauseTaskCountUp,
+        resumeTaskCountUp,
         // Focus timer actions
         setFocusTimer,
         setFocusMode,
@@ -82,6 +90,7 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
 
     // Detect active task timer mode - based on taskId, not isOpen (modal state)
     const isTaskMode = !!activeTaskId;
+    const isTaskCountUpMode = !!taskCountUpId; // New: detect task count-up mode
 
     // Aliases for easier reference (store values are now the source of truth)
     const seconds = focusSeconds;
@@ -98,10 +107,10 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
         return 30 * 60; // fallback to 30 min
     })();
 
-    // Use task timer values when in task mode, or count-up seconds in count-up mode
-    const displaySeconds = isTaskMode ? taskRemainingSeconds : (countUpMode ? countUpSeconds : seconds);
-    const displayIsRunning = isTaskMode ? isTaskRunning : isRunning;
-    const displayTotalSeconds = isTaskMode ? taskTotalSeconds : totalSeconds;
+    // Use task timer values when in task mode, task count-up when active, or count-up seconds in count-up mode
+    const displaySeconds = isTaskMode ? taskRemainingSeconds : (isTaskCountUpMode ? taskCountUpSeconds : (countUpMode ? countUpSeconds : seconds));
+    const displayIsRunning = isTaskMode ? isTaskRunning : (isTaskCountUpMode ? taskCountUpIsRunning : isRunning);
+    const displayTotalSeconds = isTaskMode ? taskTotalSeconds : (isTaskCountUpMode ? 0 : totalSeconds); // Count-up has no total
 
 
     // Format time display
@@ -299,6 +308,16 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
         e.stopPropagation();
         console.log('Start/Pause clicked, current isRunning:', isRunning);
 
+        if (isTaskCountUpMode) {
+            // Handle task count-up timer
+            if (taskCountUpIsRunning) {
+                pauseTaskCountUp();
+            } else {
+                resumeTaskCountUp();
+            }
+            return;
+        }
+
         if (focusSeconds === 0 && !countUpMode) {
             setFocusTimer(focusTotalSeconds, focusTotalSeconds);
         }
@@ -306,6 +325,35 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
             pauseFocusTimer();
         } else {
             startFocusTimer();
+        }
+    };
+
+    const handleCompleteTaskCountUp = async () => {
+        if (!taskCountUpId) return;
+
+        // Stop the count-up timer and get elapsed time
+        const elapsedSeconds = stopTaskCountUp();
+        const elapsedMinutes = Math.round(elapsedSeconds / 60);
+
+        // Complete the task with the elapsed time
+        const result = await updateTaskAction({
+            taskId: taskCountUpId,
+            status: 'completed',
+            durationMinutes: elapsedMinutes > 0 ? elapsedMinutes : undefined,
+        });
+
+        if (result.success && result.task) {
+            const taskStore = useTaskStore.getState();
+            taskStore.addOrUpdate(result.task as any);
+        }
+
+        // Log to deep work if meaningful time spent
+        if (elapsedMinutes >= 1) {
+            try {
+                await logFocusSessionAction(elapsedMinutes, 'focus');
+            } catch (e) {
+                console.warn('Failed to log focus session:', e);
+            }
         }
     };
 
@@ -415,7 +463,7 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
             >
                 <Clock className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
                 <h2 className="font-semibold text-sm" style={{ color: currentTheme.colors.foreground }}>
-                    {isTaskMode ? (activeTaskTitle || 'Task Timer') : 'Focus Timer'}
+                    {isTaskMode ? (activeTaskTitle || 'Task Timer') : (isTaskCountUpMode ? (taskCountUpTitle || 'Task Count-Up') : 'Focus Timer')}
                 </h2>
 
                 {/* Expand Button - visible on hover */}
@@ -880,6 +928,13 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
                                 } else {
                                     resumeTaskTimer();
                                 }
+                            } else if (isTaskCountUpMode) {
+                                // Task count-up mode
+                                if (taskCountUpIsRunning) {
+                                    pauseTaskCountUp();
+                                } else {
+                                    resumeTaskCountUp();
+                                }
                             } else {
                                 // Normal mode
                                 handleStartPause(e);
@@ -887,9 +942,9 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
                         }}
                         className="px-6 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 cursor-pointer"
                         style={{
-                            backgroundColor: isTaskMode ? currentTheme.colors.primary : (mode === 'break' ? currentTheme.colors.accent : currentTheme.colors.primary),
+                            backgroundColor: isTaskMode ? currentTheme.colors.primary : (isTaskCountUpMode ? '#22c55e' : (mode === 'break' ? currentTheme.colors.accent : currentTheme.colors.primary)),
                             color: currentTheme.colors.primaryForeground,
-                            boxShadow: `0 4px 15px ${isTaskMode ? currentTheme.colors.primary : (mode === 'break' ? currentTheme.colors.accent : currentTheme.colors.primary)}30`,
+                            boxShadow: `0 4px 15px ${isTaskMode ? currentTheme.colors.primary : (isTaskCountUpMode ? '#22c55e' : (mode === 'break' ? currentTheme.colors.accent : currentTheme.colors.primary))}30`,
                         }}
                     >
                         {displayIsRunning ? (
@@ -918,62 +973,26 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
                     </button>
                 </div>
 
-                {/* Complete Task Button - only visible in task mode */}
-                {isTaskMode && (
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            if (!activeTaskId) return;
-
-                            // Calculate actual focused time
-                            const state = useTimerStore.getState();
-                            let actualFocusMinutes = 0;
-
-                            if (state.startedAt && state.endsAt) {
-                                const initialDuration = Math.round(
-                                    (state.endsAt.getTime() - state.startedAt.getTime()) / 1000
-                                );
-                                const actualFocusSeconds = initialDuration - state.remainingSeconds;
-                                actualFocusMinutes = Math.round(actualFocusSeconds / 60);
-                            }
-
-                            // End the task with actual focus time
-                            const result = await endTaskAction(activeTaskId, actualFocusMinutes);
-                            if (result.success) {
-                                // Update local task store
-                                const taskStore = useTaskStore.getState();
-                                const existingTask = taskStore.tasks.find(t => t.id === activeTaskId);
-                                if (existingTask) {
-                                    taskStore.addOrUpdate({
-                                        ...existingTask,
-                                        status: 'completed',
-                                        end_time: new Date().toISOString(),
-                                        duration_minutes: actualFocusMinutes,
-                                    } as any);
-                                }
-
-                                // Show notification
-                                showBrowserNotification('Task Completed! ✅', {
-                                    body: `Great work! Logged ${actualFocusMinutes} minutes of focus time.`,
-                                    tag: 'task-complete',
-                                });
-
-                                // Reset timer
-                                closeTimer();
-                            }
-                        }}
-                        className="w-full mt-4 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
+                {/* Complete Task button - only for task count-up mode */}
+                {isTaskCountUpMode && (
+                    <motion.button
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCompleteTaskCountUp}
+                        className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-medium transition-all mt-3 w-full relative z-10"
                         style={{
-                            backgroundColor: '#22c55e20',
-                            color: '#22c55e',
-                            border: '1px solid #22c55e40',
+                            backgroundColor: '#22c55e',
+                            color: '#fff',
+                            boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)',
                         }}
                     >
                         <CheckCircle className="w-4 h-4" />
-                        Complete Task
-                    </button>
+                        Complete Task ({Math.round(taskCountUpSeconds / 60)}m)
+                    </motion.button>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
