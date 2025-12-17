@@ -34,29 +34,31 @@ export default function AuthCallbackPage() {
                     return;
                 }
 
-                // Exchange the code for session using Supabase's built-in method
-                // This handles both hash and query param based OAuth responses
-                const { data, error: authError } = await supabaseClient.auth.exchangeCodeForSession(
-                    window.location.href
-                );
+                // The Supabase client automatically processes the OAuth callback from the URL
+                // when the page loads. We just need to wait for it to complete.
+                // Give it a moment to process the callback
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-                if (authError) {
-                    console.error('❌ Error exchanging code for session:', authError);
+                // Check if we have a session after auto-processing
+                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+
+                if (sessionError) {
+                    console.error('❌ Session error:', sessionError);
                     setStatus('error');
-                    setErrorMessage(authError.message);
-                    setTimeout(() => router.push(`/auth/login?error=${encodeURIComponent(authError.message)}`), 2000);
+                    setErrorMessage(sessionError.message);
+                    setTimeout(() => router.push(`/auth/login?error=${encodeURIComponent(sessionError.message)}`), 2000);
                     return;
                 }
 
-                if (!data.session?.user) {
-                    console.error('❌ No session after code exchange');
+                if (!session?.user) {
+                    console.error('❌ No session found after OAuth callback');
                     setStatus('error');
-                    setErrorMessage('Failed to establish session');
-                    setTimeout(() => router.push('/auth/login?error=Failed+to+establish+session'), 2000);
+                    setErrorMessage('Failed to establish session. Please try again.');
+                    setTimeout(() => router.push('/auth/login?error=No+session+established'), 2000);
                     return;
                 }
 
-                const user = data.session.user;
+                const user = session.user;
                 console.log('✅ OAuth callback: User authenticated:', user.id);
 
                 // Call server action to sync profile
