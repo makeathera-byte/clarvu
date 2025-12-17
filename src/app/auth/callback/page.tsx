@@ -1,94 +1,91 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { NextRequest } from 'next/server';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabaseClient } from '@/lib/supabase/client';
-import { syncUserProfile } from '@/lib/auth/profileSync';
+/**
+ * OAuth Callback Handler (Server Component)
+ * 
+ * Handles the OAuth callback from Google and exchanges the code for a session.
+ * This MUST be a server component to properly set session cookies.
+ */
+export default async function AuthCallbackPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ code?: string; error?: string; error_description?: string }>;
+}) {
+    const params = await searchParams;
+    const code = params.code;
+    const error = params.error;
+    const errorDescription = params.error_description;
 
-export default function AuthCallbackPage() {
-    const router = useRouter();
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const handleCallback = async () => {
-            try {
-                // Get the session from URL hash/query params
-                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-
-                if (sessionError) {
-                    console.error('Session error:', sessionError);
-                    setError(sessionError.message);
-                    setTimeout(() => router.push('/auth/login'), 2000);
-                    return;
-                }
-
-                if (session?.user) {
-                    console.log('OAuth callback: User authenticated:', session.user.id);
-
-                    // Sync profile to ensure it has correct OAuth data
-                    // Don't fail the entire login if sync has issues
-                    try {
-                        const syncResult = await syncUserProfile(session.user);
-                        if (!syncResult.success) {
-                            console.warn('Profile sync had issues, but continuing:', syncResult.error);
-                        } else {
-                            console.log('Profile sync successful');
-                        }
-                    } catch (syncErr) {
-                        console.error('Profile sync error, but continuing:', syncErr);
-                        // Don't fail - user is authenticated, profile likely exists from trigger
-                    }
-
-                    // Update last_login timestamp
-                    try {
-                        const { error: updateError } = await (supabaseClient as any)
-                            .from('profiles')
-                            .update({ last_login: new Date().toISOString() })
-                            .eq('id', session.user.id);
-
-                        if (updateError) {
-                            console.error('Error updating last_login:', updateError);
-                        }
-                    } catch (updateErr) {
-                        console.error('Error updating last_login:', updateErr);
-                    }
-
-                    console.log('Redirecting to dashboard...');
-                    router.push('/dashboard');
-                } else {
-                    // No session found, redirect to login
-                    setError('Authentication failed. Please try again.');
-                    setTimeout(() => router.push('/auth/login'), 2000);
-                }
-            } catch (err) {
-                console.error('Callback error:', err);
-                setError('An unexpected error occurred');
-                setTimeout(() => router.push('/auth/login'), 2000);
-            }
-        };
-
-        handleCallback();
-    }, [router]);
-
+    // Handle OAuth errors
     if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-4">
-                <div className="max-w-md w-full p-6 rounded-lg border border-red-200 bg-red-50">
-                    <h2 className="text-xl font-bold text-red-900 mb-4">Authentication Error</h2>
-                    <p className="text-red-700 mb-4">{error}</p>
-                    <p className="text-sm text-red-600">Redirecting to login...</p>
-                </div>
-            </div>
-        );
+        console.error('OAuth error:', error, errorDescription);
+        return redirect(`/auth/login?error=${encodeURIComponent(errorDescription || error)}`);
     }
 
-    return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="max-w-md w-full text-center">
-                <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Completing sign in...</p>
-            </div>
-        </div>
-    );
+    // If no code is present, redirect to login
+    if (!code) {
+        console.error('No code present in OAuth callback');
+        return redirect('/auth/login?error=No+authorization+code+received');
+    }
+
+    try {
+        const supabase = await createClient();
+
+        // Exchange the code for a session - this properly sets cookies
+        const { data: { session }, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (exchangeError) {
+            console.error('Error exchanging code for session:', exchangeError);
+            return redirect(`/auth/login?error=${encodeURIComponent(exchangeError.message)}`);
+        }
+
+        if (!session?.user) {
+            console.error('No session after code exchange');
+            return redirect('/auth/login?error=Failed+to+establish+session');
+        }
+
+        const user = session.user;
+        console.log('✅ OAuth callback: User authenticated:', user.id);
+
+        // Import and call syncUserProfile directly (we're already server-side)
+        try {
+            const { syncUserProfile } = await import('@/lib/auth/profileSync');
+            const syncResult = await syncUserProfile(user);
+
+            if (!syncResult.success) {
+                console.warn('⚠️ Profile sync had issues, but continuing:', syncResult.error);
+            } else {
+                console.log('✅ Profile sync successful');
+            }
+        } catch (syncErr) {
+            console.error('❌ Profile sync error, but continuing:', syncErr);
+            // Don't fail - user is authenticated, profile likely exists from trigger
+        }
+
+        // Update last_login timestamp
+        try {
+            const { error: updateError } = await (supabase as any)
+                .from('profiles')
+                .update({ last_login: new Date().toISOString() })
+                .eq('id', user.id);
+
+            if (updateError) {
+                console.error('Error updating last_login:', updateError);
+            }
+        } catch (updateErr) {
+            console.error('Error updating last_login:', updateErr);
+        }
+
+        console.log('✅ Redirecting to dashboard...');
+
+        // Server-side redirect - this will work because cookies are now properly set
+        return redirect('/dashboard');
+
+    } catch (err) {
+        console.error('❌ Unexpected callback error:', err);
+        return redirect('/auth/login?error=An+unexpected+error+occurred');
+    }
 }
 
