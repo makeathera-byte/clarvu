@@ -75,14 +75,25 @@ export default function AuthCallbackPage() {
                     console.error('❌ Profile sync error, but continuing:', syncErr);
                 }
 
-                // Update last_login timestamp
+                // Update last_login timestamp (only if profile exists)
+                // The trigger should have created the profile, but wait a bit if needed
                 try {
-                    await (supabaseClient as any)
+                    // Wait a bit more for trigger to complete if profile sync had issues
+                    if (!syncResult.success) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    
+                    const { error: updateErr } = await (supabaseClient as any)
                         .from('profiles')
                         .update({ last_login: new Date().toISOString() })
                         .eq('id', user.id);
+                    
+                    if (updateErr) {
+                        console.warn('Could not update last_login (profile may not exist yet):', updateErr);
+                    }
                 } catch (updateErr) {
-                    console.error('Error updating last_login:', updateErr);
+                    console.warn('Error updating last_login:', updateErr);
+                    // Don't fail the entire flow if this fails
                 }
 
                 console.log('✅ Redirecting to dashboard...');

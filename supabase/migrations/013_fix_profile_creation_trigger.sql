@@ -14,26 +14,68 @@ create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
+set search_path = public
 as $$
+declare
+  user_provider text;
+  user_full_name text;
+  user_avatar_url text;
 begin
+  -- Determine provider from app_metadata
+  -- For Google OAuth, Supabase sets raw_app_meta_data->>'provider' to 'google'
+  -- For email signups, it may be null or 'email'
+  user_provider := coalesce(
+    new.raw_app_meta_data->>'provider',
+    'email'
+  );
+  
+  -- Extract full name from metadata (Google OAuth uses 'full_name' or 'name')
+  user_full_name := coalesce(
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'name',
+    split_part(coalesce(new.email, ''), '@', 1), -- Fallback to email username
+    ''
+  );
+  
+  -- Extract avatar URL (Google OAuth uses 'avatar_url' or 'picture')
+  user_avatar_url := coalesce(
+    new.raw_user_meta_data->>'avatar_url',
+    new.raw_user_meta_data->>'picture',
+    null
+  );
+
+  -- Insert profile with all required fields
   insert into public.profiles (
     id,
     email,
     full_name,
     avatar_url,
     provider,
+    theme_name,
+    onboarding_complete,
+    trial_end,
     created_at
   )
   values (
     new.id,
     new.email,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'avatar_url',
-    new.raw_app_meta_data->>'provider',
+    user_full_name,
+    user_avatar_url,
+    user_provider,
+    coalesce(new.raw_user_meta_data->>'theme_name', 'forest'),
+    false,
+    now() + interval '14 days', -- 14-day trial
     now()
-  );
+  )
+  on conflict (id) do nothing; -- Prevent errors if profile already exists
 
   return new;
+exception
+  when others then
+    -- Log error but don't fail the user creation
+    -- This allows user to be created even if profile creation fails
+    raise warning 'Error creating profile for user %: %', new.id, sqlerrm;
+    return new;
 end;
 $$;
 
