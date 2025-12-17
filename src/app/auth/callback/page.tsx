@@ -23,24 +23,37 @@ export default function AuthCallbackPage() {
                 }
 
                 if (session?.user) {
+                    console.log('OAuth callback: User authenticated:', session.user.id);
+
                     // Sync profile to ensure it has correct OAuth data
-                    // The database trigger should have created it automatically
-                    await syncUserProfile(session.user);
-                    
+                    // Don't fail the entire login if sync has issues
+                    try {
+                        const syncResult = await syncUserProfile(session.user);
+                        if (!syncResult.success) {
+                            console.warn('Profile sync had issues, but continuing:', syncResult.error);
+                        } else {
+                            console.log('Profile sync successful');
+                        }
+                    } catch (syncErr) {
+                        console.error('Profile sync error, but continuing:', syncErr);
+                        // Don't fail - user is authenticated, profile likely exists from trigger
+                    }
+
                     // Update last_login timestamp
                     try {
                         const { error: updateError } = await (supabaseClient as any)
                             .from('profiles')
                             .update({ last_login: new Date().toISOString() })
                             .eq('id', session.user.id);
-                        
+
                         if (updateError) {
                             console.error('Error updating last_login:', updateError);
                         }
                     } catch (updateErr) {
                         console.error('Error updating last_login:', updateErr);
                     }
-                    
+
+                    console.log('Redirecting to dashboard...');
                     router.push('/dashboard');
                 } else {
                     // No session found, redirect to login
