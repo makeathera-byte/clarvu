@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { LayoutDashboard, Timer, Settings, LogOut, Menu, X, BarChart3, Sparkles, Shield, Target } from 'lucide-react';
 import { NotificationBadge } from '@/components/notifications';
-import { ConnectionStatusIndicator } from '@/components/realtime';
 import { Logo } from '@/components/layout/Logo';
 import { AccountMenu } from '@/components/navbar/AccountMenu';
 
@@ -99,13 +98,10 @@ export function Navbar({ isAdmin = false, userName = 'User' }: NavbarProps) {
                         })}
                     </div>
 
-                    {/* Right Side: Notification, Connection Status, Account Menu */}
+                    {/* Right Side: Notification and Account Menu */}
                     <div className="flex items-center gap-3">
                         {/* Notification Badge */}
                         <NotificationBadge />
-
-                        {/* Connection Status */}
-                        <ConnectionStatusIndicator />
 
                         {/* Account Menu (includes trial status and logout) */}
                         <AccountMenu
