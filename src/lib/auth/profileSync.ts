@@ -127,10 +127,10 @@ export async function syncUserProfile(user: User) {
                     const trialEnd = new Date();
                     trialEnd.setDate(trialEnd.getDate() + 14);
 
-                    // Create profile
-                    const { error: insertError } = await serviceClient
+                    // Upsert profile (insert or update if already exists from trigger)
+                    const { error: upsertError } = await serviceClient
                         .from('profiles')
-                        .insert({
+                        .upsert({
                             id: user.id,
                             full_name: profileData.full_name || '',
                             avatar_url: profileData.avatar_url,
@@ -140,10 +140,12 @@ export async function syncUserProfile(user: User) {
                             theme_name: metadata.theme_name || 'forest',
                             trial_end: trialEnd.toISOString(),
                             onboarding_complete: false,
+                        }, {
+                            onConflict: 'id'
                         });
 
-                    if (insertError) {
-                        console.error('Service role insert failed:', insertError);
+                    if (upsertError) {
+                        console.error('Service role upsert failed:', upsertError);
                         return { success: false, error: 'Failed to create profile' };
                     }
 
