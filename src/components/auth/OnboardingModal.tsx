@@ -108,7 +108,7 @@ export function OnboardingModal() {
             </div>
 
             {/* Main Content Container */}
-            <div className="relative z-10 w-full flex flex-col lg:flex-row">
+            <div className="relative z-30 w-full flex flex-col lg:flex-row">
                 {/* Left Side - Content */}
                 <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 lg:p-12 min-h-screen">
                     <motion.div
