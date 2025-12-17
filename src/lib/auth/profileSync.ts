@@ -107,42 +107,90 @@ export async function syncUserProfile(user: User) {
                 .maybeSingle();
 
             if (!retryProfile) {
-                // Profile still doesn't exist - trigger may have failed
-                // Log error but don't create profile manually (frontend should only read/update)
-                console.error('Profile still does not exist after waiting. Database trigger may have failed.');
-                return {
-                    success: false,
-                    error: 'Profile not found. Please contact support if this persists.'
-                };
-            }
+                // Trigger failed - use service role to create profile
+                console.error('Trigger failed. Creating profile with service role...');
 
-            // Profile now exists (created by trigger), update it with OAuth data and trial
-            const trialEnd = new Date();
-            trialEnd.setDate(trialEnd.getDate() + 14);
+                try {
+                    const { createClient: createServiceClient } = await import('@supabase/supabase-js');
+                    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+                    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-            const updateData: any = {};
-            if (profileData.full_name && !retryProfile.full_name) updateData.full_name = profileData.full_name;
-            if (profileData.avatar_url && !retryProfile.avatar_url) updateData.avatar_url = profileData.avatar_url;
-            if (profileData.provider && (!retryProfile.provider || retryProfile.provider === 'email')) {
-                updateData.provider = profileData.provider;
-            }
-            if (profileData.country && !retryProfile.country) updateData.country = profileData.country;
-            if (profileData.timezone && !retryProfile.timezone) updateData.timezone = profileData.timezone;
-            
-            // Set trial if not already set
-            if (!retryProfile.trial_end) {
-                updateData.trial_end = trialEnd.toISOString();
-            }
+                    if (!serviceRoleKey || !supabaseUrl) {
+                        console.error('Missing SUPABASE_SERVICE_ROLE_KEY');
+                        return { success: false, error: 'Server configuration error' };
+                    }
 
-            // Only update if there's something to update
-            if (Object.keys(updateData).length > 0) {
-                const { error: updateError } = await (supabase as any)
-                    .from('profiles')
-                    .update(updateData)
-                    .eq('id', user.id);
+                    const serviceClient = createServiceClient(supabaseUrl, serviceRoleKey, {
+                        auth: { autoRefreshToken: false, persistSession: false }
+                    });
 
-                if (updateError) {
-                    console.error('Error updating newly created profile:', updateError);
+                    const trialEnd = new Date();
+                    trialEnd.setDate(trialEnd.getDate() + 14);
+
+                    // Create profile
+                    const { error: insertError } = await serviceClient
+                        .from('profiles')
+                        .insert({
+                            id: user.id,
+                            full_name: profileData.full_name || '',
+                            avatar_url: profileData.avatar_url,
+                            provider: profileData.provider,
+                            country: profileData.country,
+                            timezone: profileData.timezone || 'UTC',
+                            theme_name: metadata.theme_name || 'forest',
+                            trial_end: trialEnd.toISOString(),
+                            onboarding_complete: false,
+                        });
+
+                    if (insertError) {
+                        console.error('Service role insert failed:', insertError);
+                        return { success: false, error: 'Failed to create profile' };
+                    }
+
+                    // Create default categories
+                    await serviceClient.from('categories').insert([
+                        { user_id: user.id, name: 'Business', color: '#2563eb', type: 'growth', is_default: true },
+                        { user_id: user.id, name: 'Growth', color: '#22c55e', type: 'growth', is_default: true },
+                        { user_id: user.id, name: 'Product / Build', color: '#8b5cf6', type: 'delivery', is_default: true },
+                        { user_id: user.id, name: 'Operations / Admin', color: '#6b7280', type: 'admin', is_default: true },
+                        { user_id: user.id, name: 'Learning / Skill', color: '#4f46e5', type: 'personal', is_default: true },
+                        { user_id: user.id, name: 'Personal / Health', color: '#facc15', type: 'personal', is_default: true },
+                        { user_id: user.id, name: 'Routine', color: '#fb923c', type: 'necessity', is_default: true },
+                        { user_id: user.id, name: 'Waste / Distraction', color: '#ef4444', type: 'waste', is_default: true },
+                    ]);
+
+                    console.log('Profile created successfully with service role');
+                } catch (error) {
+                    console.error('Service role creation error:', error);
+                    return { success: false, error: 'Failed to create profile' };
+                }
+            } else {
+                // Profile exists, update with OAuth data and trial
+                const trialEnd = new Date();
+                trialEnd.setDate(trialEnd.getDate() + 14);
+
+                const updateData: any = {};
+                if (profileData.full_name && !retryProfile.full_name) updateData.full_name = profileData.full_name;
+                if (profileData.avatar_url && !retryProfile.avatar_url) updateData.avatar_url = profileData.avatar_url;
+                if (profileData.provider && (!retryProfile.provider || retryProfile.provider === 'email')) {
+                    updateData.provider = profileData.provider;
+                }
+                if (profileData.country && !retryProfile.country) updateData.country = profileData.country;
+                if (profileData.timezone && !retryProfile.timezone) updateData.timezone = profileData.timezone;
+
+                if (!retryProfile.trial_end) {
+                    updateData.trial_end = trialEnd.toISOString();
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                    const { error: updateError } = await (supabase as any)
+                        .from('profiles')
+                        .update(updateData)
+                        .eq('id', user.id);
+
+                    if (updateError) {
+                        console.error('Error updating profile:', updateError);
+                    }
                 }
             }
         }
