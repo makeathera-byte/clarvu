@@ -62,9 +62,10 @@ export default function AuthCallbackPage() {
                 console.log('✅ OAuth callback: User authenticated:', user.id);
 
                 // Call server action to sync profile
+                let syncResult: { success: boolean; error?: string } | null = null;
                 try {
                     const { syncUserProfile } = await import('@/lib/auth/profileSync');
-                    const syncResult = await syncUserProfile(user);
+                    syncResult = await syncUserProfile(user);
 
                     if (!syncResult.success) {
                         console.warn('⚠️ Profile sync had issues, but continuing:', syncResult.error);
@@ -73,13 +74,14 @@ export default function AuthCallbackPage() {
                     }
                 } catch (syncErr) {
                     console.error('❌ Profile sync error, but continuing:', syncErr);
+                    syncResult = { success: false, error: syncErr instanceof Error ? syncErr.message : 'Unknown error' };
                 }
 
                 // Update last_login timestamp (only if profile exists)
                 // The trigger should have created the profile, but wait a bit if needed
                 try {
                     // Wait a bit more for trigger to complete if profile sync had issues
-                    if (!syncResult.success) {
+                    if (syncResult && !syncResult.success) {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                     
