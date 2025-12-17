@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getThemeById, defaultTheme } from '@/lib/theme/presets';
 import { ThemeProvider } from '@/lib/theme/ThemeContext';
@@ -24,9 +25,28 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     try {
         const supabase = await createClient();
 
-        // Get current user
-        const { data: { user: authUser } } = await supabase.auth.getUser();
+        // Get current user - retry if not found (might be timing issue after OAuth)
+        let { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
         user = authUser;
+        
+        // If no user found, wait and retry once (OAuth callback timing issue)
+        if (!user && !authError) {
+            console.log('[DashboardLayout] No user found initially, waiting and retrying...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const retryResult = await supabase.auth.getUser();
+            user = retryResult.data?.user || null;
+            if (user) {
+                console.log('[DashboardLayout] ✅ User found on retry');
+            } else {
+                console.log('[DashboardLayout] ❌ No user found after retry');
+            }
+        }
+        
+        // If still no user, redirect to login
+        if (!user) {
+            console.log('[DashboardLayout] Redirecting to login - no user found');
+            redirect('/auth/login');
+        }
 
         // Load theme, user name, and check for onboarding from profile if user is authenticated
         // Profile should exist (created by database trigger), but we handle gracefully if not

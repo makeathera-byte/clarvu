@@ -111,10 +111,59 @@ export default function AuthCallbackPage() {
                     // Don't fail the entire flow if this fails
                 }
 
-                // Wait a bit more to ensure session is fully propagated to server components
-                // This helps with RLS policies that need auth.uid() to be available
-                console.log('✅ Waiting for session to propagate to server components...');
+                // Ensure session is written to cookies before redirecting
+                // The Supabase client should have already done this, but we'll verify
+                const sessionCheck = await supabaseClient.auth.getSession();
+                if (!sessionCheck.data?.session) {
+                    console.error('❌ Session not found before redirect!');
+                    setStatus('error');
+                    setErrorMessage('Session not established. Please try again.');
+                    setTimeout(() => router.push('/auth/login?error=Session+not+established'), 2000);
+                    return;
+                }
+
+                console.log('✅ Session verified before redirect:', sessionCheck.data.session.user.id);
+                
+                // Force a session refresh to ensure cookies are written
+                // This is critical for middleware to see the session
+                console.log('🔄 Refreshing session to ensure cookies are written...');
+                const refreshResult = await supabaseClient.auth.refreshSession();
+                if (refreshResult.error) {
+                    console.warn('⚠️ Session refresh warning:', refreshResult.error.message);
+                } else {
+                    console.log('✅ Session refreshed successfully');
+                }
+                
+                // Wait longer to ensure session cookies are fully written and propagated
+                // This helps with middleware reading the session on the next request
+                console.log('✅ Waiting for session cookies to be written...');
                 await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Verify session one more time after refresh
+                const finalCheck = await supabaseClient.auth.getSession();
+                if (!finalCheck.data?.session) {
+                    console.error('❌ Session lost after refresh!');
+                    setStatus('error');
+                    setErrorMessage('Session not stable. Please try again.');
+                    setTimeout(() => router.push('/auth/login?error=Session+not+stable'), 2000);
+                    return;
+                }
+                
+                console.log('✅ Final session check passed:', finalCheck.data.session.user.id);
+                
+                // Log all cookies before redirect to verify they're set
+                const allCookies = document.cookie.split('; ').map(c => {
+                    const [name, ...rest] = c.split('=');
+                    return { name, value: rest.join('=').substring(0, 30) + '...' };
+                });
+                const supabaseCookies = allCookies.filter(c => 
+                    c.name.includes('auth') || c.name.includes('supabase') || c.name.includes('sb-')
+                );
+                console.log('🍪 Cookies before redirect:', supabaseCookies.map(c => c.name).join(', '));
+                console.log('🍪 Total cookies:', allCookies.length);
+                
+                // Wait a bit more to ensure cookies are fully written to browser
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 // Use window.location.href instead of router.push() to force a full page reload
                 // This ensures cookies are properly sent to the server/middleware
