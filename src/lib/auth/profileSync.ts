@@ -45,11 +45,36 @@ export async function syncUserProfile(user: User) {
         }
 
         // Check if profile exists and get full data
-        const { data: existingProfile } = await (supabase as any)
+        // Use maybeSingle() to avoid errors when profile doesn't exist or RLS blocks access
+        let existingProfile = null;
+        
+        const { data: initialProfileData, error: initialError } = await (supabase as any)
             .from('profiles')
             .select('id, full_name, avatar_url, provider, country, timezone, trial_end')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
+        
+        existingProfile = initialProfileData;
+
+        // If profile not found, it might be RLS blocking access or timing issue
+        // Wait a bit for session to be fully established, then retry
+        if (!existingProfile) {
+            console.log('Profile not found initially, waiting for session/trigger to establish...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Retry once after waiting
+            const retryResult = await (supabase as any)
+                .from('profiles')
+                .select('id, full_name, avatar_url, provider, country, timezone, trial_end')
+                .eq('id', user.id)
+                .maybeSingle();
+            
+            if (retryResult.data) {
+                // Profile found on retry - RLS or timing was the issue
+                existingProfile = retryResult.data;
+                console.log('✅ Profile found on retry - session/trigger is now established');
+            }
+        }
 
         if (existingProfile) {
             // Update existing profile - only update missing/null fields
