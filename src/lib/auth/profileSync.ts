@@ -93,22 +93,36 @@ export async function syncUserProfile(user: User) {
             }
         } else {
             // Profile doesn't exist - database trigger should have created it
-            // Wait briefly for trigger to complete, then retry once
+            // Wait for trigger to complete with multiple retries
             console.log('Profile not found for user, waiting for trigger to create it:', user.id);
 
-            // Wait 1 second for trigger to complete
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Check one more time
-            const { data: retryProfile } = await (supabase as any)
-                .from('profiles')
-                .select('id, full_name, avatar_url, provider, country, timezone, trial_end')
-                .eq('id', user.id)
-                .maybeSingle();
+            // Retry multiple times with increasing delays to handle timing issues
+            let retryProfile = null;
+            const maxRetries = 5;
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+                
+                const { data: profile, error: profileError } = await (supabase as any)
+                    .from('profiles')
+                    .select('id, full_name, avatar_url, provider, country, timezone, trial_end')
+                    .eq('id', user.id)
+                    .maybeSingle();
+                
+                if (profile) {
+                    retryProfile = profile;
+                    console.log(`✅ Profile found after ${attempt + 1} retry attempt(s)`);
+                    break;
+                }
+                
+                if (profileError && profileError.code !== 'PGRST116') {
+                    // PGRST116 is "not found", other errors are real issues
+                    console.warn(`Profile check error (attempt ${attempt + 1}):`, profileError);
+                }
+            }
 
             if (!retryProfile) {
-                // Trigger failed - use service role to create profile
-                console.error('Trigger failed. Creating profile with service role...');
+                // Trigger may have failed or there's a delay - use service role to create profile
+                console.warn('Profile not found after multiple retries. Creating profile with service role as fallback...');
 
                 try {
                     const { createClient: createServiceClient } = await import('@supabase/supabase-js');
