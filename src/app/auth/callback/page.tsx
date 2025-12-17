@@ -114,10 +114,12 @@ export default function AuthCallbackPage() {
                 // Wait a bit more to ensure session is fully propagated to server components
                 // This helps with RLS policies that need auth.uid() to be available
                 console.log('✅ Waiting for session to propagate to server components...');
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
+                // Use window.location.href instead of router.push() to force a full page reload
+                // This ensures cookies are properly sent to the server/middleware
                 console.log('✅ Redirecting to dashboard...');
-                router.push('/dashboard');
+                window.location.href = '/dashboard';
 
             } catch (err) {
                 console.error('❌ Unexpected callback error:', err);
