@@ -78,7 +78,7 @@ export function Hero() {
                             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300" />
 
                             {/* Button Content */}
-                            <span className="relative z-10">Start free</span>
+                            <span className="relative z-10">Get Started</span>
                             <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
 
                             {/* Shimmer Effect */}

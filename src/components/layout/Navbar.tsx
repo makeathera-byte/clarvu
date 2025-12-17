@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { LayoutDashboard, Timer, Settings, LogOut, Menu, X, BarChart3, Sparkles, Shield, Target } from 'lucide-react';
-import { logoutAction } from '@/app/auth/login/actions';
 import { NotificationBadge } from '@/components/notifications';
 import { ConnectionStatusIndicator } from '@/components/realtime';
 import { Logo } from '@/components/layout/Logo';

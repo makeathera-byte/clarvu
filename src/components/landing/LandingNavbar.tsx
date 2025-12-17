@@ -1,18 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabaseClient } from '@/lib/supabase/client';
 
 export function LandingNavbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isSignedIn, setIsSignedIn] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const navLinks = [
         { name: 'Features', href: '#features' },
         { name: 'About', href: '#about' },
         { name: 'Contact Us', href: '#contact' },
     ];
+
+    useEffect(() => {
+        // Check initial auth status
+        const checkAuth = async () => {
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                setIsSignedIn(!!user);
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                setIsSignedIn(false);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        checkAuth();
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+            setIsSignedIn(!!session?.user);
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, []);
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
@@ -42,18 +71,31 @@ export function LandingNavbar() {
 
                     {/* Desktop Action Buttons */}
                     <div className="hidden md:flex items-center gap-3">
-                        <Link
-                            href="/auth/login"
-                            className="px-5 py-2.5 text-gray-700 hover:text-green-700 font-semibold text-sm transition-colors"
-                        >
-                            Sign In
-                        </Link>
-                        <Link
-                            href="/pricing"
-                            className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                            Start Free Trial
-                        </Link>
+                        {!isLoading && (
+                            <>
+                                <Link
+                                    href="/pricing"
+                                    className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    Start Free Trial
+                                </Link>
+                                {isSignedIn ? (
+                                    <Link
+                                        href="/dashboard"
+                                        className="px-5 py-2.5 border-2 border-green-600 text-green-600 rounded-lg font-semibold text-sm hover:bg-green-50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                                    >
+                                        Go to Dashboard
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        href="/auth/login"
+                                        className="px-5 py-2.5 border-2 border-green-600 text-green-600 rounded-lg font-semibold text-sm hover:bg-green-50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                                    >
+                                        Sign In
+                                    </Link>
+                                )}
+                            </>
+                        )}
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -92,22 +134,34 @@ export function LandingNavbar() {
                                     {link.name}
                                 </a>
                             ))}
-                            <div className="pt-3 space-y-2 border-t border-gray-200">
-                                <Link
-                                    href="/auth/login"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="block px-4 py-2.5 text-center text-gray-700 hover:bg-gray-50 rounded-lg font-semibold text-sm transition-colors"
-                                >
-                                    Sign In
-                                </Link>
-                                <Link
-                                    href="/pricing"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="block px-4 py-2.5 text-center bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold text-sm shadow-md"
-                                >
-                                    Start Free Trial
-                                </Link>
-                            </div>
+                            {!isLoading && (
+                                <div className="pt-3 space-y-2 border-t border-gray-200">
+                                    <Link
+                                        href="/pricing"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="block px-4 py-2.5 text-center bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold text-sm shadow-md"
+                                    >
+                                        Start Free Trial
+                                    </Link>
+                                    {isSignedIn ? (
+                                        <Link
+                                            href="/dashboard"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="block px-4 py-2.5 text-center border-2 border-green-600 text-green-600 rounded-lg font-semibold text-sm"
+                                        >
+                                            Go to Dashboard
+                                        </Link>
+                                    ) : (
+                                        <Link
+                                            href="/auth/login"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="block px-4 py-2.5 text-center border-2 border-green-600 text-green-600 rounded-lg font-semibold text-sm"
+                                        >
+                                            Sign In
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 )}

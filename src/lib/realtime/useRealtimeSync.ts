@@ -9,7 +9,7 @@ import { useTimerStore } from '@/lib/store/useTimerStore';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UseRealtimeSyncOptions {
-    userId: string;
+    userId: string | null;
     onConnectionChange?: (status: 'connected' | 'reconnecting' | 'disconnected') => void;
 }
 

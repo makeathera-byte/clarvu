@@ -18,12 +18,10 @@ interface ProfileTheme {
 
 export default async function GoalsLayout({ children }: GoalsLayoutProps) {
     let initialThemeId = defaultTheme.id;
-    let user = null;
 
     try {
         const supabase = await createClient();
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        user = authUser;
+        const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
             const { data: profile } = await supabase
@@ -50,13 +48,9 @@ export default async function GoalsLayout({ children }: GoalsLayoutProps) {
                 <Navbar />
                 <FocusSoundPanel />
                 <div className="pt-20"> {/* Add padding for fixed navbar */}
-                    {user ? (
-                        <RealtimeProvider userId={user.id}>
-                            {children}
-                        </RealtimeProvider>
-                    ) : (
-                        children
-                    )}
+                    <RealtimeProvider userId={null}>
+                        {children}
+                    </RealtimeProvider>
                 </div>
             </div>
         </ThemeProvider>

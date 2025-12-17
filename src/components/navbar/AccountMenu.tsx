@@ -7,10 +7,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ChevronDown, User, LogOut, Sparkles } from 'lucide-react';
+import { ChevronDown, User, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { logoutAction } from '@/app/auth/login/actions';
 
 interface AccountMenuProps {
     userName: string;
@@ -27,9 +25,7 @@ interface AccountMenuProps {
 export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [trialDays, setTrialDays] = useState<number | null>(null);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
 
     // Fetch trial status
     useEffect(() => {
@@ -57,12 +53,6 @@ export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    const handleLogout = async () => {
-        setIsLoggingOut(true);
-        await logoutAction();
-        router.push('/auth/login');
-    };
 
     const displayName = userName || 'User';
     const hasActiveTrial = trialDays !== null && trialDays > 0;
@@ -101,7 +91,7 @@ export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
                         }}
                     >
                         {/* User Info Section */}
-                        <div className="p-4 border-b" style={{ borderColor: themeColors.border }}>
+                        <div className="p-4" style={{ borderColor: themeColors.border }}>
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: themeColors.primary }}>
                                     <User className="w-5 h-5" style={{ color: 'white' }} />
@@ -120,8 +110,8 @@ export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
                             {hasActiveTrial ? (
                                 <div
                                     className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isUrgent
-                                            ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-400/25'
-                                            : 'bg-gradient-to-r from-emerald-500/15 to-teal-500/15 border border-emerald-400/25'
+                                        ? 'bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-400/25'
+                                        : 'bg-gradient-to-r from-emerald-500/15 to-teal-500/15 border border-emerald-400/25'
                                         }`}
                                 >
                                     <Sparkles className={`w-3.5 h-3.5 ${isUrgent ? 'text-amber-500' : 'text-emerald-500'}`} />
@@ -141,19 +131,6 @@ export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
                                 </div>
                             )}
                         </div>
-
-                        {/* Logout Button */}
-                        <button
-                            onClick={handleLogout}
-                            disabled={isLoggingOut}
-                            className="w-full px-4 py-3 flex items-center gap-3 transition-colors hover:bg-black/5"
-                            style={{ color: themeColors.foreground }}
-                        >
-                            <LogOut className="w-4 h-4" />
-                            <span className="text-sm font-medium">
-                                {isLoggingOut ? 'Logging out...' : 'Logout'}
-                            </span>
-                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -18,64 +18,21 @@ interface ProfileTheme {
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
     let initialThemeId = defaultTheme.id;
-    let user = null;
     let userName = 'User';
-    let needsOnboarding = false;
 
     try {
         const supabase = await createClient();
 
-        // Get current user - retry if not found (might be timing issue after OAuth)
-        let { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-        user = authUser;
-        
-        // If no user found, wait and retry once (OAuth callback timing issue)
-        if (!user && !authError) {
-            console.log('[DashboardLayout] No user found initially, waiting and retrying...');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const retryResult = await supabase.auth.getUser();
-            user = retryResult.data?.user || null;
-            if (user) {
-                console.log('[DashboardLayout] ✅ User found on retry');
-            } else {
-                console.log('[DashboardLayout] ❌ No user found after retry');
-            }
-        }
-        
-        // If still no user, redirect to login
-        if (!user) {
-            console.log('[DashboardLayout] Redirecting to login - no user found');
-            redirect('/auth/login');
-        }
+        // Try to get user for theme preferences (optional - won't block if user not found)
+        const { data: { user } } = await supabase.auth.getUser();
 
-        // Load theme, user name, and check for onboarding from profile if user is authenticated
-        // Profile should exist (created by database trigger), but we handle gracefully if not
+        // Load theme and user name from profile if user is authenticated
         if (user) {
-            let { data: profile, error } = await supabase
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('theme_name, full_name, country')
                 .eq('id', user.id)
                 .single<ProfileTheme & { full_name: string | null; country: string | null }>();
-
-            // If profile not found, wait and retry multiple times
-            // This handles RLS timing issues where profile exists but isn't visible yet
-            if (!profile && error?.code === 'PGRST116') {
-                // Retry up to 3 times with increasing delays
-                for (let attempt = 0; attempt < 3; attempt++) {
-                    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-                    const retryResult = await supabase
-                        .from('profiles')
-                        .select('theme_name, full_name, country')
-                        .eq('id', user.id)
-                        .single<ProfileTheme & { full_name: string | null; country: string | null }>();
-                    
-                    if (retryResult.data) {
-                        profile = retryResult.data;
-                        console.log(`✅ Profile found in dashboard layout after ${attempt + 1} retry attempt(s)`);
-                        break;
-                    }
-                }
-            }
 
             if (profile?.theme_name) {
                 const theme = getThemeById(profile.theme_name);
@@ -87,11 +44,6 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
             // Set user name if available
             if (profile?.full_name) {
                 userName = profile.full_name;
-            }
-
-            // Check if OAuth user needs onboarding (no country set)
-            if (!profile?.country) {
-                needsOnboarding = true;
             }
         }
     } catch (error) {
@@ -105,13 +57,9 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
                 <BackgroundRenderer />
                 <Navbar userName={userName} />
                 <FocusSoundPanel />
-                {user ? (
-                    <RealtimeProvider userId={user.id} needsOnboarding={needsOnboarding}>
-                        {children}
-                    </RealtimeProvider>
-                ) : (
-                    children
-                )}
+                <RealtimeProvider userId={null}>
+                    {children}
+                </RealtimeProvider>
             </div>
         </ThemeProvider>
     );

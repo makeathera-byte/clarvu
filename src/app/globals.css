@@ -560,3 +560,255 @@ textarea:focus,
 select:focus {
   will-change: contents;
 }
+
+/* ============================================
+   AUTH PAGE STYLING - PREMIUM EDITION
+   ============================================ */
+
+/* Clean white auth page background with subtle texture */
+.auth-page-bg {
+  background: #ffffff;
+  background-image:
+    radial-gradient(circle at 25px 25px, rgba(0, 0, 0, 0.02) 2%, transparent 0%),
+    radial-gradient(circle at 75px 75px, rgba(0, 0, 0, 0.02) 2%, transparent 0%);
+  background-size: 100px 100px;
+  position: relative;
+}
+
+/* Enhanced premium auth card for white background */
+.auth-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 2rem;
+  padding: 3rem;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  animation: authCardEnter 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg,
+      rgba(102, 126, 234, 0.05) 0%,
+      rgba(118, 75, 162, 0.05) 100%);
+  border-radius: 2rem;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.auth-card:hover::before {
+  opacity: 1;
+}
+
+@keyframes authCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.92) rotateX(10deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+  }
+}
+
+@keyframes borderGlow {
+
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-card {
+    padding: 2rem 1.5rem;
+    border-radius: 1.5rem;
+  }
+}
+
+/* Enhanced auth input fields */
+.auth-input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 2px solid rgba(102, 126, 234, 0.15);
+  border-radius: 1rem;
+  font-size: 0.9375rem;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+}
+
+.auth-input:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.auth-input:focus {
+  border-color: #667eea;
+  box-shadow:
+    0 0 0 4px rgba(102, 126, 234, 0.12),
+    0 4px 12px rgba(102, 126, 234, 0.15);
+  background: #ffffff;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.auth-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.auth-input::placeholder {
+  color: rgba(0, 0, 0, 0.35);
+  font-weight: 400;
+}
+
+/* Enhanced auth labels */
+.auth-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 0.625rem;
+  letter-spacing: 0.3px;
+}
+
+/* Enhanced primary auth button */
+.auth-button-primary {
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 15px rgba(102, 126, 234, 0.4),
+    0 2px 8px rgba(118, 75, 162, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-button-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent);
+  transition: left 0.5s;
+}
+
+.auth-button-primary:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.auth-button-primary:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 8px 25px rgba(102, 126, 234, 0.5),
+    0 4px 12px rgba(118, 75, 162, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.auth-button-primary:active:not(:disabled) {
+  transform: translateY(0) scale(1);
+}
+
+.auth-button-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Enhanced Google OAuth button */
+.auth-button-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #374151;
+  background: #ffffff;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-button-google::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(102, 126, 234, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.auth-button-google:hover:not(:disabled)::before {
+  width: 300px;
+  height: 300px;
+}
+
+.auth-button-google:hover:not(:disabled) {
+  background: #fafbfc;
+  border-color: rgba(102, 126, 234, 0.2);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.auth-button-google:active:not(:disabled) {
+  transform: translateY(0) scale(1);
+}
+
+.auth-button-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner animation for loading states */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -22,6 +22,10 @@ const lora = Lora({
 export const metadata: Metadata = {
   title: "Clarvu — See Where Your Time Actually Goes",
   description: "Clarvu helps business owners track focus, eliminate wasted time, and build real productivity with clarity.",
+  icons: {
+    icon: '/clarvu-icon.png',
+    apple: '/clarvu-icon.png',
+  },
 };
 
 function LoadingFallback() {

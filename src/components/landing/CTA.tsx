@@ -22,7 +22,7 @@ export function CTA() {
                     href="/pricing"
                     className="inline-flex items-center gap-2 px-10 py-5 bg-green-600 text-white rounded-lg font-bold text-lg shadow-lg hover:bg-green-700 transition-colors duration-200"
                 >
-                    Create your free account
+                    Get Started
                     <ArrowRight className="w-6 h-6" />
                 </Link>
 

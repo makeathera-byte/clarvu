@@ -2,7 +2,6 @@ import { ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { getThemeById, defaultTheme } from '@/lib/theme/presets';
 import { ThemeProvider } from '@/lib/theme/ThemeContext';
-import { redirect } from 'next/navigation';
 
 
 interface FocusLayoutProps {
@@ -19,31 +18,27 @@ export default async function FocusLayout({ children }: FocusLayoutProps) {
     try {
         const supabase = await createClient();
 
-        // Get current user
+        // Get current user (optional - for theme loading)
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user) {
-            redirect('/auth/login');
-        }
+        // Load theme from profile if user is authenticated
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('theme_name')
+                .eq('id', user.id)
+                .single<ProfileTheme>();
 
-        // Load theme from profile
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('theme_name')
-            .eq('id', user.id)
-            .single<ProfileTheme>();
-
-        if (profile?.theme_name) {
-            const theme = getThemeById(profile.theme_name);
-            if (theme) {
-                initialThemeId = profile.theme_name;
+            if (profile?.theme_name) {
+                const theme = getThemeById(profile.theme_name);
+                if (theme) {
+                    initialThemeId = profile.theme_name;
+                }
             }
         }
     } catch (error) {
         console.error('Error in FocusLayout:', error);
         // Use default theme if there's an error
-        // If client creation fails, we can't verify auth, so redirect to login
-        redirect('/auth/login');
     }
 
     return (

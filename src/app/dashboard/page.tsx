@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { DashboardClient } from './DashboardClient';
 import { CategoryStoreInitializer } from '@/components/dashboard/CategoryStoreInitializer';
 import { fetchTodayTasks, fetchCategories, fetchUserProfile, fetchTodayCalendarEvents } from './actions';
+import { redirect } from 'next/navigation';
 
 function DashboardSkeleton() {
     return (
@@ -37,6 +38,11 @@ export default async function DashboardPage() {
         fetchUserProfile(),
         fetchTodayCalendarEvents(),
     ]);
+
+    // Check if user has completed onboarding
+    if (profileData && !profileData.onboarding_complete) {
+        redirect('/auth/onboarding');
+    }
 
     return (
         <>

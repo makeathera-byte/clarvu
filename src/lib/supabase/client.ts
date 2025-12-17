@@ -43,25 +43,33 @@ export const supabaseClient = createBrowserClient<Database>(
         }
         cookiesToSet.forEach(({ name, value, options }) => {
           let cookieString = `${name}=${value}`;
+          
+          // Set path - default to root if not specified
+          cookieString += `; Path=${options?.path || '/'}`;
+          
+          // Set SameSite - important for cross-site requests
+          cookieString += `; SameSite=${options?.sameSite || 'lax'}`;
+          
+          // Set MaxAge if provided
           if (options?.maxAge) {
             cookieString += `; Max-Age=${options.maxAge}`;
           }
+          
+          // Set domain if provided (usually not needed for same-domain)
           if (options?.domain) {
             cookieString += `; Domain=${options.domain}`;
           }
-          if (options?.path) {
-            cookieString += `; Path=${options.path}`;
-          }
-          if (options?.sameSite) {
-            cookieString += `; SameSite=${options.sameSite}`;
-          }
-          if (options?.secure) {
+          
+          // Set Secure flag if in production or explicitly requested
+          if (options?.secure || (typeof window !== 'undefined' && window.location.protocol === 'https:')) {
             cookieString += `; Secure`;
           }
-          if (options?.httpOnly) {
-            cookieString += `; HttpOnly`;
-          }
+          
+          // Note: HttpOnly cannot be set via document.cookie (security feature)
+          // It must be set server-side, which Supabase SSR handles automatically
+          
           document.cookie = cookieString;
+          console.log(`🍪 Set cookie: ${name} (Path: ${options?.path || '/'}, SameSite: ${options?.sameSite || 'lax'})`);
         });
       },
     },

@@ -26,6 +26,7 @@ interface UserProfile {
     full_name: string | null;
     timezone: string | null;
     country: string | null;
+    onboarding_complete: boolean | null;
 }
 
 interface CalendarEventFromDB {
@@ -61,7 +62,7 @@ export async function fetchTodayTasks(): Promise<TaskFromDB[]> {
             .from('tasks')
             .select('id, title, status, start_time, end_time, duration_minutes, category_id, priority, is_scheduled')
             .eq('user_id', user.id);
-        
+
         // Order by start_time, with nulls last
         const { data, error } = await query.order('start_time', { ascending: true });
 
@@ -73,7 +74,7 @@ export async function fetchTodayTasks(): Promise<TaskFromDB[]> {
                 hint: error.hint || null,
                 code: error.code || null,
             };
-            
+
             // Try to stringify, but handle circular references
             let errorString = 'Unknown error';
             try {
@@ -81,7 +82,7 @@ export async function fetchTodayTasks(): Promise<TaskFromDB[]> {
             } catch (e) {
                 errorString = String(error);
             }
-            
+
             console.error('Error fetching tasks:', errorString);
             console.error('Raw error object:', error);
             return [];
@@ -103,12 +104,12 @@ export async function fetchTodayTasks(): Promise<TaskFromDB[]> {
             if (task.status === 'unscheduled' || (!task.is_scheduled && !task.start_time)) {
                 return true;
             }
-            
+
             // If no start_time, exclude (unless it's unscheduled which we handled above)
             if (!task.start_time) {
                 return false;
             }
-            
+
             // Include tasks scheduled for today
             const taskStart = new Date(task.start_time);
             return taskStart >= start && taskStart < end;
@@ -162,7 +163,7 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
 
     const { data, error } = await (supabase as any)
         .from('profiles')
-        .select('full_name, timezone, country')
+        .select('full_name, timezone, country, onboarding_complete')
         .eq('id', user.id)
         .single();
 
