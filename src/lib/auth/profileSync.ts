@@ -92,27 +92,49 @@ export async function syncUserProfile(user: User) {
                 }
             }
         } else {
-            // Create new profile with 14-day trial
+            // Profile doesn't exist - this shouldn't happen as the database trigger should create it
+            // Wait a moment and check again in case the trigger is still running
+            console.log('Profile not found for user, waiting for trigger to create it:', user.id);
+
+            // Wait 1 second for trigger to complete
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Check one more time
+            const { data: retryProfile } = await (supabase as any)
+                .from('profiles')
+                .select('id')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (!retryProfile) {
+                console.error('Profile still does not exist after waiting. Database trigger may have failed.');
+                // Don't try to insert manually - this would violate RLS
+                // The trigger should have handled profile creation
+                return {
+                    success: false,
+                    error: 'Profile creation failed - database trigger did not run'
+                };
+            }
+
+            // Profile now exists, update it with OAuth data and trial
             const trialEnd = new Date();
             trialEnd.setDate(trialEnd.getDate() + 14);
 
-            const { error } = await (supabase as any)
-                .from('profiles')
-                .insert({
-                    id: user.id,
-                    full_name: profileData.full_name,
-                    avatar_url: profileData.avatar_url,
-                    provider: profileData.provider,
-                    country: profileData.country,
-                    timezone: profileData.timezone || 'UTC',
-                    theme_name: metadata.theme_name || 'forest',
-                    trial_end: trialEnd.toISOString(),
-                    onboarding_complete: false,
-                });
+            const updateData: any = {};
+            if (profileData.full_name) updateData.full_name = profileData.full_name;
+            if (profileData.avatar_url) updateData.avatar_url = profileData.avatar_url;
+            if (profileData.provider) updateData.provider = profileData.provider;
+            if (profileData.country) updateData.country = profileData.country;
+            if (profileData.timezone) updateData.timezone = profileData.timezone;
+            updateData.trial_end = trialEnd.toISOString();
 
-            if (error) {
-                console.error('Error creating profile:', error);
-                // Profile might be created by trigger, that's okay
+            const { error: updateError } = await (supabase as any)
+                .from('profiles')
+                .update(updateData)
+                .eq('id', user.id);
+
+            if (updateError) {
+                console.error('Error updating newly created profile:', updateError);
             }
         }
 

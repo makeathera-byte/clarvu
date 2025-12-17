@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 export default function PricingPage() {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white">
+        <div className="min-h-screen bg-white">
             {/* Header Section */}
             <section className="container-padding pt-20 pb-12 md:pt-32 md:pb-16">
                 <div className="max-w-4xl mx-auto text-center animate-fade-in">
