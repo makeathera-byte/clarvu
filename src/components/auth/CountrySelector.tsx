@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { searchCountries, type Country } from '@/lib/data/countries';
-import { FiSearch, FiCheck } from 'react-icons/fi';
+import { searchCountries } from '@/lib/data/countries';
+import { Search, Globe } from 'lucide-react';
+import { useTheme } from '@/lib/theme/ThemeContext';
 
 interface CountrySelectorProps {
     selectedCountry: string | null;
@@ -13,58 +14,150 @@ interface CountrySelectorProps {
 export function CountrySelector({ selectedCountry, onSelect }: CountrySelectorProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const filteredCountries = searchCountries(searchQuery);
+    const { currentTheme } = useTheme();
 
     return (
-        <div className="space-y-4">
-            {/* Search Input */}
+        <div className="space-y-6">
+            {/* Search Input - Large and Prominent */}
             <div className="relative">
-                <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search
+                    className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6"
+                    style={{ color: currentTheme.colors.mutedForeground }}
+                />
                 <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search countries..."
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none text-sm"
+                    placeholder="Search for your country..."
+                    className="w-full pl-16 pr-6 py-5 border-2 rounded-2xl focus:outline-none focus:ring-4 transition-all text-lg font-medium shadow-lg"
+                    style={{
+                        borderColor: currentTheme.colors.border,
+                        backgroundColor: currentTheme.colors.background,
+                        color: currentTheme.colors.foreground,
+                    }}
+                    autoFocus
                 />
             </div>
 
-            {/* Country List */}
-            <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white">
+            {/* Country Grid - Large Cards */}
+            <div className="max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
                 <AnimatePresence mode="popLayout">
                     {filteredCountries.length > 0 ? (
-                        filteredCountries.map((country) => (
-                            <motion.button
-                                key={country.code}
-                                layout
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                onClick={() => onSelect(country.code)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-0 ${selectedCountry === country.code ? 'bg-purple-100' : ''
-                                    }`}
-                            >
-                                <span className="text-2xl">{country.flag}</span>
-                                <span className="flex-1 text-left text-sm font-medium text-gray-900">
-                                    {country.name}
-                                </span>
-                                {selectedCountry === country.code && (
-                                    <FiCheck className="w-5 h-5 text-purple-600" />
-                                )}
-                            </motion.button>
-                        ))
-                    ) : (
-                        <div className="p-8 text-center text-gray-500 text-sm">
-                            No countries found
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {filteredCountries.slice(0, 48).map((country) => {
+                                const isSelected = selectedCountry === country.code;
+                                return (
+                                    <motion.button
+                                        key={country.code}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        whileHover={{ scale: 1.05, y: -4 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => onSelect(country.code)}
+                                        className="relative flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all duration-300 group overflow-hidden"
+                                        style={{
+                                            borderColor: isSelected ? currentTheme.colors.primary : currentTheme.colors.border,
+                                            backgroundColor: isSelected
+                                                ? `${currentTheme.colors.primary}15`
+                                                : currentTheme.colors.card,
+                                            boxShadow: isSelected
+                                                ? `0 8px 24px ${currentTheme.colors.primary}40`
+                                                : '0 2px 8px rgba(0,0,0,0.05)',
+                                        }}
+                                    >
+                                        {/* Selected indicator */}
+                                        {isSelected && (
+                                            <motion.div
+                                                className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center"
+                                                style={{ backgroundColor: currentTheme.colors.primary }}
+                                                initial={{ scale: 0, rotate: -180 }}
+                                                animate={{ scale: 1, rotate: 0 }}
+                                                transition={{ type: 'spring', stiffness: 500 }}
+                                            >
+                                                <motion.div
+                                                    className="w-2 h-2 rounded-full"
+                                                    style={{ backgroundColor: currentTheme.colors.primaryForeground }}
+                                                />
+                                            </motion.div>
+                                        )}
+
+                                        {/* Flag - Larger */}
+                                        <span className="text-5xl group-hover:scale-110 transition-transform duration-200">
+                                            {country.flag}
+                                        </span>
+
+                                        {/* Country Name */}
+                                        <span
+                                            className="text-sm font-semibold text-center line-clamp-2 leading-tight"
+                                            style={{
+                                                color: isSelected
+                                                    ? currentTheme.colors.primary
+                                                    : currentTheme.colors.foreground,
+                                            }}
+                                        >
+                                            {country.name}
+                                        </span>
+                                    </motion.button>
+                                );
+                            })}
                         </div>
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex flex-col items-center justify-center py-16 px-6"
+                        >
+                            <Globe
+                                className="w-16 h-16 mb-4 opacity-30"
+                                style={{ color: currentTheme.colors.mutedForeground }}
+                            />
+                            <p
+                                className="text-lg font-medium"
+                                style={{ color: currentTheme.colors.mutedForeground }}
+                            >
+                                No countries found
+                            </p>
+                            <p
+                                className="text-sm mt-2"
+                                style={{ color: currentTheme.colors.mutedForeground }}
+                            >
+                                Try a different search term
+                            </p>
+                        </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
-            {filteredCountries.length > 10 && (
-                <p className="text-xs text-gray-500 text-center">
-                    Showing {filteredCountries.length} countries
-                </p>
+            {/* Results count */}
+            {searchQuery && filteredCountries.length > 0 && (
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-sm text-center font-medium"
+                    style={{ color: currentTheme.colors.mutedForeground }}
+                >
+                    Found {filteredCountries.length} {filteredCountries.length === 1 ? 'country' : 'countries'}
+                </motion.p>
             )}
+
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: ${currentTheme.colors.muted};
+                    border-radius: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: ${currentTheme.colors.primary};
+                    border-radius: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: ${currentTheme.colors.accent};
+                }
+            `}</style>
         </div>
     );
 }
