@@ -23,8 +23,8 @@ export default function AuthCallbackPage() {
                 }
 
                 if (session?.user) {
-                    // Sync profile to ensure it exists and has correct data
-                    // The database trigger should have created it, but this is a backup
+                    // Sync profile to ensure it has correct OAuth data
+                    // The database trigger should have created it automatically
                     await syncUserProfile(session.user);
                     
                     // Update last_login timestamp

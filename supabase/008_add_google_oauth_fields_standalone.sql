@@ -110,3 +110,4 @@ $$ language plpgsql security definer; -- Use security definer to bypass RLS
 -- - Updated trigger function to handle Google OAuth metadata
 -- ============================================================
 
+

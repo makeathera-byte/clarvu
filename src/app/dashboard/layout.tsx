@@ -29,12 +29,24 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
         user = authUser;
 
         // Load theme, user name, and check for onboarding from profile if user is authenticated
+        // Profile should exist (created by database trigger), but we handle gracefully if not
         if (user) {
-            const { data: profile } = await supabase
+            let { data: profile, error } = await supabase
                 .from('profiles')
                 .select('theme_name, full_name, country')
                 .eq('id', user.id)
                 .single<ProfileTheme & { full_name: string | null; country: string | null }>();
+
+            // If profile not found, wait briefly and retry once (trigger may still be processing)
+            if (!profile && error?.code === 'PGRST116') {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const retryResult = await supabase
+                    .from('profiles')
+                    .select('theme_name, full_name, country')
+                    .eq('id', user.id)
+                    .single<ProfileTheme & { full_name: string | null; country: string | null }>();
+                profile = retryResult.data;
+            }
 
             if (profile?.theme_name) {
                 const theme = getThemeById(profile.theme_name);

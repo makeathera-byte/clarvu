@@ -126,13 +126,31 @@ export async function getSession() {
     return session;
 }
 
-// Helper to get user profile
-export async function getUserProfile(userId: string) {
+// Helper to get user profile with retry logic
+// Profiles are created by database trigger, so we may need to wait briefly
+export async function getUserProfile(userId: string, retry = true) {
     const supabase = await createClient();
-    const { data: profile } = await supabase
+    let { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+    
+    // If profile not found and retry is enabled, wait and retry once
+    if (!profile && retry && error?.code === 'PGRST116') {
+        // Wait 1 second for trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Retry once
+        const retryResult = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+        
+        profile = retryResult.data;
+        error = retryResult.error;
+    }
+    
     return profile;
 }

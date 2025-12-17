@@ -92,8 +92,8 @@ export async function syncUserProfile(user: User) {
                 }
             }
         } else {
-            // Profile doesn't exist - this shouldn't happen as the database trigger should create it
-            // Wait a moment and check again in case the trigger is still running
+            // Profile doesn't exist - database trigger should have created it
+            // Wait briefly for trigger to complete, then retry once
             console.log('Profile not found for user, waiting for trigger to create it:', user.id);
 
             // Wait 1 second for trigger to complete
@@ -102,39 +102,48 @@ export async function syncUserProfile(user: User) {
             // Check one more time
             const { data: retryProfile } = await (supabase as any)
                 .from('profiles')
-                .select('id')
+                .select('id, full_name, avatar_url, provider, country, timezone, trial_end')
                 .eq('id', user.id)
                 .maybeSingle();
 
             if (!retryProfile) {
+                // Profile still doesn't exist - trigger may have failed
+                // Log error but don't create profile manually (frontend should only read/update)
                 console.error('Profile still does not exist after waiting. Database trigger may have failed.');
-                // Don't try to insert manually - this would violate RLS
-                // The trigger should have handled profile creation
                 return {
                     success: false,
-                    error: 'Profile creation failed - database trigger did not run'
+                    error: 'Profile not found. Please contact support if this persists.'
                 };
             }
 
-            // Profile now exists, update it with OAuth data and trial
+            // Profile now exists (created by trigger), update it with OAuth data and trial
             const trialEnd = new Date();
             trialEnd.setDate(trialEnd.getDate() + 14);
 
             const updateData: any = {};
-            if (profileData.full_name) updateData.full_name = profileData.full_name;
-            if (profileData.avatar_url) updateData.avatar_url = profileData.avatar_url;
-            if (profileData.provider) updateData.provider = profileData.provider;
-            if (profileData.country) updateData.country = profileData.country;
-            if (profileData.timezone) updateData.timezone = profileData.timezone;
-            updateData.trial_end = trialEnd.toISOString();
+            if (profileData.full_name && !retryProfile.full_name) updateData.full_name = profileData.full_name;
+            if (profileData.avatar_url && !retryProfile.avatar_url) updateData.avatar_url = profileData.avatar_url;
+            if (profileData.provider && (!retryProfile.provider || retryProfile.provider === 'email')) {
+                updateData.provider = profileData.provider;
+            }
+            if (profileData.country && !retryProfile.country) updateData.country = profileData.country;
+            if (profileData.timezone && !retryProfile.timezone) updateData.timezone = profileData.timezone;
+            
+            // Set trial if not already set
+            if (!retryProfile.trial_end) {
+                updateData.trial_end = trialEnd.toISOString();
+            }
 
-            const { error: updateError } = await (supabase as any)
-                .from('profiles')
-                .update(updateData)
-                .eq('id', user.id);
+            // Only update if there's something to update
+            if (Object.keys(updateData).length > 0) {
+                const { error: updateError } = await (supabase as any)
+                    .from('profiles')
+                    .update(updateData)
+                    .eq('id', user.id);
 
-            if (updateError) {
-                console.error('Error updating newly created profile:', updateError);
+                if (updateError) {
+                    console.error('Error updating newly created profile:', updateError);
+                }
             }
         }
 

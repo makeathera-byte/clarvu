@@ -61,9 +61,9 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
             return { success: false, error: 'Signup failed - no user returned' };
         }
 
-        // The database triggers will automatically create the profile and default categories
-        // We'll wait a moment for the triggers to complete
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // The database trigger will automatically create the profile
+        // Wait briefly for the trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Calculate 14-day trial end date for all new signups
         const trialEnd = new Date();
@@ -71,11 +71,7 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
 
         // Try to update the profile with all signup fields
         // The profile should already exist from the trigger
-        // Note: After signup, the session might not be immediately available for RLS
-        // So we'll try update first, and if it fails due to RLS, that's okay - the trigger created it
-
-        // Update the profile with all signup fields including trial
-        // Using type assertion to work around TypeScript inference issues with Supabase
+        // Note: Profiles are created ONLY via database trigger, frontend only updates
         const updatePayload = {
             full_name: formData.fullName,
             theme_name: formData.themeName,
@@ -93,36 +89,8 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
 
         if (profileError) {
             console.error('Profile update error:', profileError);
-            console.error('Error code:', profileError.code);
-            console.error('Error message:', profileError.message);
-            console.error('Error hint:', profileError.hint);
-            console.error('Error details:', JSON.stringify(profileError, null, 2));
-
-            // If update fails (likely due to RLS), try upsert as fallback
-            const profileData = {
-                id: data.user.id,
-                full_name: formData.fullName,
-                theme_name: formData.themeName,
-                country: formData.country,
-                timezone: formData.timezone,
-                trial_end: trialEnd.toISOString(),
-                onboarding_complete: false,
-            };
-
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error: upsertError } = await supabase
-                .from('profiles')
-                .upsert(profileData as any, {
-                    onConflict: 'id'
-                });
-
-            if (upsertError) {
-                console.error('Profile upsert also failed:', upsertError);
-                console.error('Upsert error code:', upsertError.code);
-                console.error('Upsert error message:', upsertError.message);
-                // Don't fail signup - the profile was created by trigger with default values
-                // The user can update their profile later in settings
-            }
+            // Don't fail signup - the profile was created by trigger with default values
+            // The user can update their profile later in settings or onboarding
         }
 
         // Verify default categories were created, create them if not (fallback)
