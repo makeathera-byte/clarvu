@@ -19,20 +19,24 @@ export function ThemeSelector({ selectedTheme, onSelect }: ThemeSelectorProps) {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className={`relative p-4 rounded-xl border-2 transition-all text-left ${selectedTheme === theme.id
-                            ? 'border-purple-500 bg-purple-50'
-                            : 'border-gray-200 hover:border-purple-300'
+                        ? 'border-green-600 bg-green-50 shadow-lg shadow-green-100'
+                        : 'border-gray-200 hover:border-green-300 hover:shadow-md'
                         }`}
                 >
                     {/* Selected Indicator */}
                     {selectedTheme === theme.id && (
-                        <div className="absolute top-3 right-3 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute top-3 right-3 w-7 h-7 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center shadow-lg"
+                        >
                             <FiCheck className="w-4 h-4 text-white" />
-                        </div>
+                        </motion.div>
                     )}
 
                     {/* Theme Preview */}
                     <div
-                        className="w-full h-24 rounded-lg mb-3"
+                        className="w-full h-24 rounded-lg mb-3 shadow-md"
                         style={{
                             background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.accent})`,
                         }}

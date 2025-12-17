@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Logo } from '@/components/layout/Logo';
+import Image from 'next/image';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
     return (
@@ -7,7 +7,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             <div className="w-full max-w-md px-4 py-8">
                 {/* Logo */}
                 <div className="flex justify-center mb-8">
-                    <Logo />
+                    <Image
+                        src="https://xrdxkgyynnzkbxtxoycl.supabase.co/storage/v1/object/public/logo/Transparent%20logo%201_1.png"
+                        alt="Clarvu Logo"
+                        width={140}
+                        height={40}
+                        priority
+                    />
                 </div>
 
                 {/* Auth Card */}

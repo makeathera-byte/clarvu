@@ -1,19 +1,36 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CountrySelector } from '@/components/auth/CountrySelector';
 import { ThemeSelector } from '@/components/auth/ThemeSelector';
 import { saveOnboardingData } from '@/app/auth/onboarding/actions';
 import { useRouter } from 'next/navigation';
+import { Check, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { useTheme } from '@/lib/theme/ThemeContext';
 
 export function OnboardingModal() {
     const router = useRouter();
+    const { setTheme } = useTheme();
     const [step, setStep] = useState<1 | 2>(1);
     const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
     const [selectedTheme, setSelectedTheme] = useState('forest');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Apply theme instantly when selected
+    useEffect(() => {
+        if (step === 2 && selectedTheme) {
+            console.log('Applying theme preview:', selectedTheme);
+            setTheme(selectedTheme);
+        }
+    }, [selectedTheme, step, setTheme]);
+
+    const handleThemeSelect = (themeId: string) => {
+        setSelectedTheme(themeId);
+        // Theme will be applied via useEffect above
+    };
 
     const handleContinue = async () => {
         if (step === 1) {
@@ -28,9 +45,13 @@ export function OnboardingModal() {
             setError('');
 
             try {
+                console.log('Saving onboarding data...', { selectedCountry, selectedTheme });
                 const result = await saveOnboardingData(selectedCountry!, selectedTheme);
+                console.log('Onboarding result:', result);
 
                 if (result.success) {
+                    // Small delay to show success state
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     router.push('/dashboard');
                     router.refresh();
                 } else {
@@ -38,6 +59,7 @@ export function OnboardingModal() {
                     setLoading(false);
                 }
             } catch (err) {
+                console.error('Onboarding error:', err);
                 setError('An unexpected error occurred');
                 setLoading(false);
             }
@@ -45,82 +67,178 @@ export function OnboardingModal() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-white">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 via-white to-emerald-50">
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-2xl"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-3xl"
             >
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        {step === 1 ? 'Where are you from?' : 'Choose your theme'}
-                    </h1>
-                    <p className="text-gray-600">
-                        {step === 1
-                            ? 'Select your country to get started'
-                            : 'Pick a theme that matches your style'}
-                    </p>
+                {/* Logo */}
+                <div className="flex justify-center mb-8">
+                    <Image
+                        src="https://xrdxkgyynnzkbxtxoycl.supabase.co/storage/v1/object/public/logo/Transparent%20logo%201_1.png"
+                        alt="Clarvu Logo"
+                        width={140}
+                        height={40}
+                        priority
+                    />
                 </div>
 
-                {/* Progress Indicator */}
-                <div className="flex gap-2 mb-8">
-                    <div className={`flex-1 h-2 rounded-full ${step >= 1 ? 'bg-purple-600' : 'bg-gray-200'}`} />
-                    <div className={`flex-1 h-2 rounded-full ${step >= 2 ? 'bg-purple-600' : 'bg-gray-200'}`} />
-                </div>
-
-                {/* Error Message */}
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="p-3 rounded-lg bg-red-50 border border-red-200 mb-6"
-                    >
-                        <p className="text-sm text-red-600">{error}</p>
-                    </motion.div>
-                )}
-
-                {/* Content Card */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-                    {step === 1 ? (
-                        <CountrySelector
-                            selectedCountry={selectedCountry}
-                            onSelect={setSelectedCountry}
-                        />
-                    ) : (
-                        <ThemeSelector
-                            selectedTheme={selectedTheme}
-                            onSelect={setSelectedTheme}
-                        />
-                    )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-4">
-                    {step === 2 && (
-                        <button
-                            onClick={() => setStep(1)}
-                            disabled={loading}
-                            className="px-6 py-3 rounded-xl border-2 border-gray-200 font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                        >
-                            Back
-                        </button>
-                    )}
-                    <button
-                        onClick={handleContinue}
-                        disabled={loading || (step === 1 && !selectedCountry)}
-                        className="flex-1 auth-button-primary disabled:opacity-50"
-                    >
-                        {loading ? (
-                            <div className="flex items-center justify-center gap-2">
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                <span>Saving...</span>
+                {/* Progress Steps */}
+                <div className="flex items-center justify-center mb-12">
+                    <div className="flex items-center gap-4">
+                        {/* Step 1 */}
+                        <div className="flex flex-col items-center">
+                            <div
+                                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${step >= 1
+                                        ? 'bg-green-600 text-white shadow-lg shadow-green-200'
+                                        : 'bg-gray-200 text-gray-500'
+                                    }`}
+                            >
+                                {step > 1 ? <Check className="w-6 h-6" /> : '1'}
                             </div>
-                        ) : (
-                            step === 1 ? 'Continue' : 'Get Started'
-                        )}
-                    </button>
+                            <span className="text-sm font-medium text-gray-700 mt-2">Country</span>
+                        </div>
+
+                        {/* Connector */}
+                        <div className={`h-1 w-24 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-green-600' : 'bg-gray-200'}`} />
+
+                        {/* Step 2 */}
+                        <div className="flex flex-col items-center">
+                            <div
+                                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${step >= 2
+                                        ? 'bg-green-600 text-white shadow-lg shadow-green-200'
+                                        : 'bg-gray-200 text-gray-500'
+                                    }`}
+                            >
+                                2
+                            </div>
+                            <span className="text-sm font-medium text-gray-700 mt-2">Theme</span>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Main Card */}
+                <motion.div
+                    className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden"
+                    layout
+                >
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6 text-white">
+                        <motion.h1
+                            key={step}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-3xl font-bold mb-2"
+                        >
+                            {step === 1 ? 'Welcome to Clarvu!' : 'Choose Your Workspace Theme'}
+                        </motion.h1>
+                        <motion.p
+                            key={`desc-${step}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-green-100"
+                        >
+                            {step === 1
+                                ? "Let's get to know you better. Where are you from?"
+                                : 'Pick a theme and see it come to life instantly'}
+                        </motion.p>
+                    </div>
+
+                    {/* Error Message */}
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="bg-red-50 border-b border-red-100"
+                            >
+                                <div className="px-8 py-4">
+                                    <p className="text-sm text-red-600 font-medium">{error}</p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Content */}
+                    <div className="p-8">
+                        <AnimatePresence mode="wait">
+                            {step === 1 ? (
+                                <motion.div
+                                    key="country"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <CountrySelector
+                                        selectedCountry={selectedCountry}
+                                        onSelect={setSelectedCountry}
+                                    />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="theme"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <div className="mb-4">
+                                        <p className="text-sm text-gray-600 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                                            ✨ <strong>Live Preview:</strong> Your workspace theme will change as you select different options
+                                        </p>
+                                    </div>
+                                    <ThemeSelector
+                                        selectedTheme={selectedTheme}
+                                        onSelect={handleThemeSelect}
+                                    />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Footer / Actions */}
+                    <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 flex gap-4">
+                        {step === 2 && (
+                            <button
+                                onClick={() => {
+                                    setStep(1);
+                                    setError('');
+                                }}
+                                disabled={loading}
+                                className="px-6 py-3 rounded-xl border-2 border-gray-300 font-semibold text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Back
+                            </button>
+                        )}
+                        <button
+                            onClick={handleContinue}
+                            disabled={loading || (step === 1 && !selectedCountry)}
+                            className="flex-1 px-6 py-3 rounded-xl font-bold text-lg text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2 group"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    <span>Saving...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>{step === 1 ? 'Continue' : 'Get Started'}</span>
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </motion.div>
+
+                {/* Helper Text */}
+                <p className="text-center text-sm text-gray-500 mt-6">
+                    {step === 1 ? 'Step 1 of 2' : 'Almost there! One more step'}
+                </p>
             </motion.div>
         </div>
     );

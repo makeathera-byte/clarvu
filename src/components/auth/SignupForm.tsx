@@ -176,7 +176,7 @@ export function SignupForm() {
             {/* Login Link */}
             <p className="text-center text-sm text-gray-600">
                 Already have an account?{' '}
-                <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                <Link href="/auth/login" className="font-medium text-green-600 hover:text-green-700 transition-colors">
                     Sign in
                 </Link>
             </p>
