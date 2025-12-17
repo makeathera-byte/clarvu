@@ -30,8 +30,9 @@ const nextConfig: NextConfig = {
   // Optimize production builds
   compress: true,
 
-  // Enable component caching for better performance
-  cacheComponents: true,
+  // Disable component caching to avoid cookies() prerendering issues
+  // This prevents HANGING_PROMISE_REJECTION errors during build
+  cacheComponents: false,
 
   // PWA support with service worker
   experimental: {

@@ -33,20 +33,35 @@ export async function createClient() {
     }
 
     // Helper to safely get cookies
-    // During prerendering, cookies() throws - we handle this gracefully
+    // During prerendering with cacheComponents, cookies() can throw HANGING_PROMISE_REJECTION
+    // We need to catch this and return a mock cookie store
     const getCookieStore = async () => {
         try {
-            return await cookies();
+            const cookieStore = await cookies();
+            return cookieStore;
         } catch (error: any) {
-            // During prerendering, cookies() rejects - this is expected
-            // We'll return null and the client will work without cookies
+            // During prerendering, cookies() rejects with HANGING_PROMISE_REJECTION
+            // Return a mock cookie store that returns empty arrays
             if (error?.digest === 'HANGING_PROMISE_REJECTION' || 
-                error?.message?.includes('prerender')) {
-                // Silently handle prerender case
-                return null;
+                error?.message?.includes('prerender') ||
+                error?.message?.includes('HANGING_PROMISE')) {
+                // Return a mock cookie store for prerendering
+                return {
+                    getAll: () => [],
+                    get: () => undefined,
+                    set: () => {},
+                    delete: () => {},
+                    has: () => false,
+                } as any;
             }
-            console.error('Error accessing cookies:', error);
-            return null;
+            // For other errors, still return a mock store
+            return {
+                getAll: () => [],
+                get: () => undefined,
+                set: () => {},
+                delete: () => {},
+                has: () => false,
+            } as any;
         }
     };
 
