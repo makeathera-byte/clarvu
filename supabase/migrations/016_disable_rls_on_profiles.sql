@@ -14,6 +14,10 @@
 ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies (they're not needed if RLS is disabled)
+-- Note: Policies are automatically ignored when RLS is disabled, but we drop them for cleanliness
 DROP POLICY IF EXISTS "Users can read their profile" ON profiles;
 DROP POLICY IF EXISTS "Users can update their profile" ON profiles;
 DROP POLICY IF EXISTS "Users can insert their profile" ON profiles;
+DROP POLICY IF EXISTS "Users can read own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
