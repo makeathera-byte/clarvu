@@ -37,15 +37,24 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
                 .eq('id', user.id)
                 .single<ProfileTheme & { full_name: string | null; country: string | null }>();
 
-            // If profile not found, wait briefly and retry once (trigger may still be processing)
+            // If profile not found, wait and retry multiple times
+            // This handles RLS timing issues where profile exists but isn't visible yet
             if (!profile && error?.code === 'PGRST116') {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                const retryResult = await supabase
-                    .from('profiles')
-                    .select('theme_name, full_name, country')
-                    .eq('id', user.id)
-                    .single<ProfileTheme & { full_name: string | null; country: string | null }>();
-                profile = retryResult.data;
+                // Retry up to 3 times with increasing delays
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+                    const retryResult = await supabase
+                        .from('profiles')
+                        .select('theme_name, full_name, country')
+                        .eq('id', user.id)
+                        .single<ProfileTheme & { full_name: string | null; country: string | null }>();
+                    
+                    if (retryResult.data) {
+                        profile = retryResult.data;
+                        console.log(`✅ Profile found in dashboard layout after ${attempt + 1} retry attempt(s)`);
+                        break;
+                    }
+                }
             }
 
             if (profile?.theme_name) {

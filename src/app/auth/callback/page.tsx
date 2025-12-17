@@ -111,6 +111,11 @@ export default function AuthCallbackPage() {
                     // Don't fail the entire flow if this fails
                 }
 
+                // Wait a bit more to ensure session is fully propagated to server components
+                // This helps with RLS policies that need auth.uid() to be available
+                console.log('✅ Waiting for session to propagate to server components...');
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
                 console.log('✅ Redirecting to dashboard...');
                 router.push('/dashboard');
 
