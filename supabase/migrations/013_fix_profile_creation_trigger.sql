@@ -75,7 +75,7 @@ exception
     -- Log error but don't fail the user creation
     -- This allows user to be created even if profile creation fails
     raise warning 'Error creating profile for user %: %', new.id, sqlerrm;
-    return new;
+  return new;
 end;
 $$;
 
