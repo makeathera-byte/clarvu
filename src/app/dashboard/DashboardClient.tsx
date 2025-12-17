@@ -671,6 +671,7 @@ export function DashboardClient({
     // Sync with sortedTasks only when tasks are added/removed (not on initial load)
     const prevTaskCount = useRef(sortedTasks.length);
     const currentTaskIds = useMemo(() => new Set(sortedTasks.map(t => t.id)), [sortedTasks]);
+    const hasInitialized = useRef(false);
 
     useEffect(() => {
         const localIds = new Set(localTaskOrder);
@@ -679,11 +680,12 @@ export function DashboardClient({
         const hasNewTasks = sortedTasks.some(t => !localIds.has(t.id));
         const hasRemovedTasks = localTaskOrder.some(id => !currentTaskIds.has(id));
 
-        if (localTaskOrder.length === 0) {
+        if (localTaskOrder.length === 0 && !hasInitialized.current) {
             // First load - use sortedTasks order
             const order = sortedTasks.map(t => t.id);
             setLocalTaskOrder(order);
             localStorage.setItem(TASK_ORDER_KEY, JSON.stringify(order));
+            hasInitialized.current = true;
         } else if (hasNewTasks || hasRemovedTasks) {
             // Tasks changed - preserve order, remove deleted, add new at end
             const existingOrder = localTaskOrder.filter(id => currentTaskIds.has(id));
@@ -694,7 +696,7 @@ export function DashboardClient({
             setLocalTaskOrder(newOrder);
             localStorage.setItem(TASK_ORDER_KEY, JSON.stringify(newOrder));
         }
-    }, [sortedTasks, localTaskOrder, currentTaskIds]);
+    }, [sortedTasks, currentTaskIds]); // Removed localTaskOrder from dependencies
 
     // Reorder tasks by local order
     const displayTasks = useMemo(() => {

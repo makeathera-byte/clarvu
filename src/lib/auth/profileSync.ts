@@ -14,7 +14,7 @@ export async function syncUserProfile(user: User) {
         // Get user metadata
         const metadata = user.user_metadata || {};
         const appMetadata = user.app_metadata || {};
-        
+
         // Determine provider (check identities array first)
         // Supabase stores provider info in the identities array
         const identities = user.identities || [];
@@ -44,17 +44,17 @@ export async function syncUserProfile(user: User) {
             profileData.timezone = metadata.timezone;
         }
 
-        // Check if profile exists
+        // Check if profile exists and get full data
         const { data: existingProfile } = await (supabase as any)
             .from('profiles')
-            .select('id')
+            .select('id, full_name, avatar_url, provider, country, timezone, trial_end')
             .eq('id', user.id)
             .single();
 
         if (existingProfile) {
             // Update existing profile - only update missing/null fields
-            const updateData: typeof profileData = {};
-            
+            const updateData: any = {};
+
             if (profileData.full_name && !existingProfile.full_name) {
                 updateData.full_name = profileData.full_name;
             }
@@ -71,6 +71,15 @@ export async function syncUserProfile(user: User) {
                 updateData.timezone = profileData.timezone;
             }
 
+            // SET TRIAL FOR OAUTH USERS WHO DON'T HAVE ONE
+            // This ensures Google OAuth users who signed up before trial system get a trial
+            if (!existingProfile.trial_end) {
+                const trialEnd = new Date();
+                trialEnd.setDate(trialEnd.getDate() + 14);
+                updateData.trial_end = trialEnd.toISOString();
+                console.log('Setting trial for existing OAuth user:', user.id);
+            }
+
             // Only update if there's something to update
             if (Object.keys(updateData).length > 0) {
                 const { error } = await (supabase as any)
@@ -83,7 +92,10 @@ export async function syncUserProfile(user: User) {
                 }
             }
         } else {
-            // Create new profile
+            // Create new profile with 14-day trial
+            const trialEnd = new Date();
+            trialEnd.setDate(trialEnd.getDate() + 14);
+
             const { error } = await (supabase as any)
                 .from('profiles')
                 .insert({
@@ -94,6 +106,7 @@ export async function syncUserProfile(user: User) {
                     country: profileData.country,
                     timezone: profileData.timezone || 'UTC',
                     theme_name: metadata.theme_name || 'forest',
+                    trial_end: trialEnd.toISOString(),
                     onboarding_complete: false,
                 });
 

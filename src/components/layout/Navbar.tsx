@@ -10,9 +10,11 @@ import { logoutAction } from '@/app/auth/login/actions';
 import { NotificationBadge } from '@/components/notifications';
 import { ConnectionStatusIndicator } from '@/components/realtime';
 import { Logo } from '@/components/layout/Logo';
+import { AccountMenu } from '@/components/navbar/AccountMenu';
 
 interface NavbarProps {
     isAdmin?: boolean;
+    userName?: string;
 }
 
 const getNavItems = (isAdmin: boolean) => [
@@ -25,19 +27,12 @@ const getNavItems = (isAdmin: boolean) => [
     ...(isAdmin ? [{ href: '/ppadminpp', label: 'Admin', icon: Shield }] : []),
 ];
 
-export function Navbar({ isAdmin = false }: NavbarProps) {
+export function Navbar({ isAdmin = false, userName = 'User' }: NavbarProps) {
     const pathname = usePathname();
     const { currentTheme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
-    const [isPending, startTransition] = useTransition();
 
     const navItems = getNavItems(isAdmin);
-
-    const handleLogout = () => {
-        startTransition(async () => {
-            await logoutAction();
-        });
-    };
 
     const isActive = (href: string) => {
         if (href === '/dashboard') return pathname === '/dashboard';
@@ -105,35 +100,26 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
                         })}
                     </div>
 
-                    {/* Desktop Right Side - Notifications + Logout */}
-                    <div className="hidden md:flex items-center gap-2">
+                    {/* Right Side: Notification, Connection Status, Account Menu */}
+                    <div className="flex items-center gap-3">
+                        {/* Notification Badge */}
                         <NotificationBadge />
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleLogout}
-                            disabled={isPending}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors"
-                            style={{
-                                color: currentTheme.colors.mutedForeground,
-                                backgroundColor: 'transparent',
+
+                        {/* Connection Status */}
+                        <ConnectionStatusIndicator />
+
+                        {/* Account Menu (includes trial status and logout) */}
+                        <AccountMenu
+                            userName={userName}
+                            themeColors={{
+                                card: currentTheme.colors.card,
+                                border: currentTheme.colors.border,
+                                foreground: currentTheme.colors.foreground,
+                                mutedForeground: currentTheme.colors.mutedForeground,
+                                muted: currentTheme.colors.muted,
+                                primary: currentTheme.colors.primary,
                             }}
-                        >
-                            {isPending ? (
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                                    className="w-4 h-4 border-2 rounded-full"
-                                    style={{
-                                        borderColor: currentTheme.colors.border,
-                                        borderTopColor: currentTheme.colors.primary,
-                                    }}
-                                />
-                            ) : (
-                                <LogOut className="w-4 h-4" />
-                            )}
-                            <span className="text-sm font-medium">Logout</span>
-                        </motion.button>
+                        />
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -187,19 +173,6 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
                                         </Link>
                                     );
                                 })}
-
-                                {/* Mobile Logout */}
-                                <button
-                                    onClick={handleLogout}
-                                    disabled={isPending}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl"
-                                    style={{ color: currentTheme.colors.mutedForeground }}
-                                >
-                                    <LogOut className="w-5 h-5" />
-                                    <span className="font-medium">
-                                        {isPending ? 'Logging out...' : 'Logout'}
-                                    </span>
-                                </button>
                             </div>
                         </motion.div>
                     )}

@@ -31,9 +31,9 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
         }
 
         // Get redirect URL from environment or use default
-        const redirectUrl = process.env.NEXT_PUBLIC_APP_URL 
+        const redirectUrl = process.env.NEXT_PUBLIC_APP_URL
             ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`
-            : typeof window !== 'undefined' 
+            : typeof window !== 'undefined'
                 ? `${window.location.origin}/auth/login`
                 : '/auth/login';
 
@@ -65,20 +65,25 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
         // We'll wait a moment for the triggers to complete
         await new Promise(resolve => setTimeout(resolve, 1500));
 
+        // Calculate 14-day trial end date for all new signups
+        const trialEnd = new Date();
+        trialEnd.setDate(trialEnd.getDate() + 14);
+
         // Try to update the profile with all signup fields
         // The profile should already exist from the trigger
         // Note: After signup, the session might not be immediately available for RLS
         // So we'll try update first, and if it fails due to RLS, that's okay - the trigger created it
-        
-        // Update the profile with all signup fields
+
+        // Update the profile with all signup fields including trial
         // Using type assertion to work around TypeScript inference issues with Supabase
         const updatePayload = {
             full_name: formData.fullName,
             theme_name: formData.themeName,
             country: formData.country,
             timezone: formData.timezone,
+            trial_end: trialEnd.toISOString(),
         };
-        
+
         // TypeScript has issues inferring the update type, so we cast the entire chain
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: profileError } = await ((supabase as any)
@@ -92,7 +97,7 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
             console.error('Error message:', profileError.message);
             console.error('Error hint:', profileError.hint);
             console.error('Error details:', JSON.stringify(profileError, null, 2));
-            
+
             // If update fails (likely due to RLS), try upsert as fallback
             const profileData = {
                 id: data.user.id,
@@ -100,16 +105,17 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
                 theme_name: formData.themeName,
                 country: formData.country,
                 timezone: formData.timezone,
+                trial_end: trialEnd.toISOString(),
                 onboarding_complete: false,
             };
-            
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { error: upsertError } = await supabase
                 .from('profiles')
                 .upsert(profileData as any, {
                     onConflict: 'id'
                 });
-            
+
             if (upsertError) {
                 console.error('Profile upsert also failed:', upsertError);
                 console.error('Upsert error code:', upsertError.code);
@@ -164,7 +170,7 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
             name: error instanceof Error ? error.name : undefined,
             error: error,
         });
-        
+
         let errorMessage = 'An unexpected error occurred during signup';
         if (error instanceof Error) {
             errorMessage = error.message;
@@ -177,7 +183,7 @@ export async function signUpAction(formData: SignupFormData): Promise<SignupResu
                 errorMessage = String(error);
             }
         }
-        
+
         return { success: false, error: errorMessage };
     }
 }

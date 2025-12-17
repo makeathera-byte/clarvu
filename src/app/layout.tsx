@@ -20,8 +20,8 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Clarvu - Productivity & Deep Work Analytics for Business Owners",
-  description: "Clarvu — Productivity, focus, and deep work analytics designed for business owners who want to maximize their time.",
+  title: "Clarvu — See Where Your Time Actually Goes",
+  description: "Clarvu helps business owners track focus, eliminate wasted time, and build real productivity with clarity.",
 };
 
 function LoadingFallback() {
