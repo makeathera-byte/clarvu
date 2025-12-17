@@ -35,12 +35,25 @@ export default function AuthCallbackPage() {
                 }
 
                 // The Supabase client automatically processes the OAuth callback from the URL
-                // when the page loads. We just need to wait for it to complete.
-                // Give it a moment to process the callback
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // when the page loads. We need to wait for the session to be established.
+                // Try multiple times with increasing delays to handle timing issues
+                let session = null;
+                let sessionError = null;
+                let attempts = 0;
+                const maxAttempts = 5;
 
-                // Check if we have a session after auto-processing
-                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+                while (attempts < maxAttempts && !session) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * (attempts + 1)));
+                    const result = await supabaseClient.auth.getSession();
+                    session = result.data?.session;
+                    sessionError = result.error;
+                    attempts++;
+
+                    if (session) {
+                        console.log(`✅ Session established after ${attempts} attempt(s)`);
+                        break;
+                    }
+                }
 
                 if (sessionError) {
                     console.error('❌ Session error:', sessionError);
@@ -51,7 +64,7 @@ export default function AuthCallbackPage() {
                 }
 
                 if (!session?.user) {
-                    console.error('❌ No session found after OAuth callback');
+                    console.error('❌ No session found after OAuth callback after', maxAttempts, 'attempts');
                     setStatus('error');
                     setErrorMessage('Failed to establish session. Please try again.');
                     setTimeout(() => router.push('/auth/login?error=No+session+established'), 2000);
