@@ -33,10 +33,18 @@ export async function createClient() {
     }
 
     // Helper to safely get cookies
+    // During prerendering, cookies() throws - we handle this gracefully
     const getCookieStore = async () => {
         try {
             return await cookies();
-        } catch (error) {
+        } catch (error: any) {
+            // During prerendering, cookies() rejects - this is expected
+            // We'll return null and the client will work without cookies
+            if (error?.digest === 'HANGING_PROMISE_REJECTION' || 
+                error?.message?.includes('prerender')) {
+                // Silently handle prerender case
+                return null;
+            }
             console.error('Error accessing cookies:', error);
             return null;
         }

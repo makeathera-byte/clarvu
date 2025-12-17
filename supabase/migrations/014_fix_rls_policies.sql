@@ -31,3 +31,4 @@ with check (auth.uid() = id);
 -- even if RLS would normally block it. The policy above is for
 -- client-side operations, but the trigger bypasses RLS.
 
+

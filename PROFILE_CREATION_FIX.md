@@ -125,3 +125,4 @@ Expected: A new profile row exists immediately
 - Retry logic handles brief delays during trigger execution
 - Works reliably on both Vercel and local environments
 
+

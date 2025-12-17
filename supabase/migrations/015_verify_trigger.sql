@@ -43,3 +43,4 @@ AND schemaname = 'public';
 -- 4. Test: Check recent profiles (replace with actual user ID if testing)
 -- SELECT * FROM profiles ORDER BY created_at DESC LIMIT 5;
 
+
