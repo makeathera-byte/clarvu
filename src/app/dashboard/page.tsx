@@ -39,10 +39,8 @@ export default async function DashboardPage() {
         fetchTodayCalendarEvents(),
     ]);
 
-    // Check if user has completed onboarding
-    if (profileData && !profileData.onboarding_complete) {
-        redirect('/auth/onboarding');
-    }
+    // Check onboarding status - don't redirect, let modal show
+    const needsOnboarding = (profileData && (!profileData.country || !profileData.theme_name)) || false;
 
     return (
         <>
@@ -53,6 +51,7 @@ export default async function DashboardPage() {
                     userName={profileData?.full_name || null}
                     calendarEvents={eventsData}
                     userTimezone={profileData?.timezone || 'UTC'}
+                    needsOnboarding={needsOnboarding}
                 />
             </Suspense>
         </>

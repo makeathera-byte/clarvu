@@ -32,16 +32,10 @@ export async function GET(request: NextRequest) {
 
                 if (profileError) {
                     console.error('Error fetching profile:', profileError);
-                    // Redirect to dashboard as fallback
-                    return NextResponse.redirect(`${origin}/dashboard`);
                 }
 
-                // Redirect based on onboarding status
-                if (profile?.onboarding_complete) {
-                    return NextResponse.redirect(`${origin}/dashboard`);
-                } else {
-                    return NextResponse.redirect(`${origin}/auth/onboarding`);
-                }
+                // Always redirect to dashboard - onboarding modal will show if needed
+                return NextResponse.redirect(`${origin}/dashboard`);
             }
         } catch (error) {
             console.error('OAuth callback exception:', error);

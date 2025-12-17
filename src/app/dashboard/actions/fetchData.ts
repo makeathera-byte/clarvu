@@ -26,6 +26,7 @@ interface UserProfile {
     full_name: string | null;
     timezone: string | null;
     country: string | null;
+    theme_name: string | null;
     onboarding_complete: boolean | null;
 }
 
@@ -163,7 +164,7 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
 
     const { data, error } = await (supabase as any)
         .from('profiles')
-        .select('full_name, timezone, country, onboarding_complete')
+        .select('full_name, timezone, country, theme_name, onboarding_complete')
         .eq('id', user.id)
         .single();
 

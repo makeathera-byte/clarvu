@@ -13,6 +13,7 @@ import { createTaskAction, startTaskAction, updateTaskAction, deleteTaskAction, 
 import { cleanupDuplicateCategories } from '@/app/dashboard/actions/cleanupCategories';
 import { getSuggestionsForUser, recordSuggestionUse, TaskSuggestion } from '@/app/tasks/suggestionsActions';
 import { useTaskAutoStart } from '@/lib/hooks/useTaskAutoStart';
+import { DashboardOnboardingModal } from '@/components/dashboard/DashboardOnboardingModal';
 
 // Lazy load heavy components for better performance
 const CategoryPieChart = lazy(() => import('@/components/dashboard').then(m => ({ default: m.CategoryPieChart })));
@@ -65,6 +66,7 @@ interface DashboardClientProps {
     userName?: string | null;
     calendarEvents: CalendarEvent[];
     userTimezone?: string;
+    needsOnboarding?: boolean;
 }
 
 export function DashboardClient({
@@ -72,6 +74,7 @@ export function DashboardClient({
     userName,
     calendarEvents,
     userTimezone = 'UTC',
+    needsOnboarding = false,
 }: DashboardClientProps) {
     const { currentTheme } = useTheme();
     const timerStore = useTimerStore();
@@ -94,6 +97,7 @@ export function DashboardClient({
     const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [timePickerKey, setTimePickerKey] = useState(0);
+    const [showOnboardingModal, setShowOnboardingModal] = useState(needsOnboarding);
 
     // Duration selection modal state
     const [taskToStart, setTaskToStart] = useState<Task | null>(null);
@@ -1461,6 +1465,20 @@ export function DashboardClient({
                 }}
                 onSave={handleSaveFullEdit}
             />
+
+            {/* Onboarding Modal */}
+            <AnimatePresence>
+                {showOnboardingModal && (
+                    <DashboardOnboardingModal
+                        onComplete={() => setShowOnboardingModal(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Active Timer Modal */}
+            <AnimatePresence>
+                {activeTaskId && <ActiveTimerModal />}
+            </AnimatePresence>
 
             {/* Duration Selection Modal */}
             <AnimatePresence>
