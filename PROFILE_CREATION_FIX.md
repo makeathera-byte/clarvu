@@ -124,3 +124,4 @@ Expected: A new profile row exists immediately
 - Frontend never creates profiles, only reads/updates
 - Retry logic handles brief delays during trigger execution
 - Works reliably on both Vercel and local environments
+

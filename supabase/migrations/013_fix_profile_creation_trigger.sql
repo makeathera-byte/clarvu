@@ -82,3 +82,4 @@ create trigger on_auth_user_created_categories
 after insert on auth.users
 for each row
 execute procedure public.create_default_categories();
+

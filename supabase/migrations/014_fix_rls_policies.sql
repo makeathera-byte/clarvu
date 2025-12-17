@@ -30,3 +30,4 @@ with check (auth.uid() = id);
 -- Note: The trigger uses security definer, so it can insert profiles
 -- even if RLS would normally block it. The policy above is for
 -- client-side operations, but the trigger bypasses RLS.
+
