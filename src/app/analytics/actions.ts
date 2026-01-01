@@ -80,9 +80,8 @@ export async function fetchTodayTasksForAnalytics(): Promise<AnalyticsTask[]> {
         .from('tasks')
         .select('id, title, status, start_time, end_time, duration_minutes, category_id, created_at')
         .eq('user_id', user.id)
-        .gte('start_time', today.toISOString())
-        .lt('start_time', tomorrow.toISOString())
-        .order('start_time', { ascending: true });
+        .or(`and(start_time.gte.${today.toISOString()},start_time.lt.${tomorrow.toISOString()}),and(start_time.is.null,created_at.gte.${today.toISOString()},created_at.lt.${tomorrow.toISOString()})`)
+        .order('start_time', { ascending: true, nullsFirst: false });
 
     if (error) {
         console.error('Error fetching today tasks:', error);

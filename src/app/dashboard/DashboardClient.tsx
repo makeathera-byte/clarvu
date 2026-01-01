@@ -111,11 +111,46 @@ export function DashboardClient({
 
     // Task list menu state
     const [showTaskListMenu, setShowTaskListMenu] = useState(false);
-    const [dayCleared, setDayCleared] = useState(false);
+    // Store hidden task IDs in localStorage
+    const [hiddenTaskIds, setHiddenTaskIds] = useState<Set<string>>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('clarvu_hidden_task_ids');
+            if (saved) {
+                try {
+                    return new Set(JSON.parse(saved));
+                } catch (e) {
+                    return new Set();
+                }
+            }
+        }
+        return new Set();
+    });
+    // Track the last batch of cleared tasks for selective restoration
+    const [lastClearedTaskIds, setLastClearedTaskIds] = useState<Set<string>>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('clarvu_last_cleared_task_ids');
+            if (saved) {
+                try {
+                    return new Set(JSON.parse(saved));
+                } catch (e) {
+                    return new Set();
+                }
+            }
+        }
+        return new Set();
+    });
+    // Track whether to hide completed tasks
+    const [hideCompletedTasks, setHideCompletedTasks] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('clarvu_hide_completed_tasks');
+            return saved === 'true';
+        }
+        return false;
+    });
     const taskListMenuRef = useRef<HTMLDivElement>(null);
 
     // Confirmation states for task list menu actions
-    const [confirmingAction, setConfirmingAction] = useState<'removeCompleted' | 'importYesterday' | 'clearDay' | null>(null);
+    const [confirmingAction, setConfirmingAction] = useState<'importYesterday' | 'clearSlate' | null>(null);
 
     // Load saved custom duration and recent custom times
     useEffect(() => {
@@ -128,6 +163,13 @@ export function DashboardClient({
             try {
                 setRecentCustomTimes(JSON.parse(recentTimes));
             } catch (e) { /* ignore */ }
+        }
+        // Sync hideCompletedTasks from localStorage
+        const hideCompleted = localStorage.getItem('clarvu_hide_completed_tasks');
+        if (hideCompleted === 'true') {
+            setHideCompletedTasks(true);
+        } else if (hideCompleted === 'false') {
+            setHideCompletedTasks(false);
         }
     }, []);
 
@@ -240,20 +282,24 @@ export function DashboardClient({
     // Sort tasks: by status first, then by priority (high > medium > low)
     // Memoized to prevent unnecessary re-sorting on every render
     const sortedTasks = useMemo(() => {
-        return [...tasks].sort((a, b) => {
-            const statusOrder = { in_progress: 0, scheduled: 1, unscheduled: 2, completed: 3 };
-            const priorityOrder = { high: 0, medium: 1, low: 2 };
+        // Filter out hidden tasks first, then sort
+        return [...tasks]
+            .filter(task => !hiddenTaskIds.has(task.id))
+            .filter(task => !hideCompletedTasks || task.status !== 'completed') // Hide completed if toggle is on
+            .sort((a, b) => {
+                const statusOrder = { in_progress: 0, scheduled: 1, unscheduled: 2, completed: 3 };
+                const priorityOrder = { high: 0, medium: 1, low: 2 };
 
-            // First sort by status
-            const statusDiff = statusOrder[a.status] - statusOrder[b.status];
-            if (statusDiff !== 0) return statusDiff;
+                // First sort by status
+                const statusDiff = statusOrder[a.status] - statusOrder[b.status];
+                if (statusDiff !== 0) return statusDiff;
 
-            // Then sort by priority (within same status)
-            const aPriority = (a as any).priority || 'medium';
-            const bPriority = (b as any).priority || 'medium';
-            return priorityOrder[aPriority as keyof typeof priorityOrder] - priorityOrder[bPriority as keyof typeof priorityOrder];
-        });
-    }, [tasks]);
+                // Then sort by priority (within same status)
+                const aPriority = (a as any).priority || 'medium';
+                const bPriority = (b as any).priority || 'medium';
+                return priorityOrder[aPriority as keyof typeof priorityOrder] - priorityOrder[bPriority as keyof typeof priorityOrder];
+            });
+    }, [tasks, hiddenTaskIds, hideCompletedTasks]);
 
     const getCategory = (id: string | null) => categories.find(c => c.id === id);
     const selectedCategory = getCategory(newTaskCategory);
@@ -583,14 +629,10 @@ export function DashboardClient({
     };
 
     // Task List Menu Actions
-    const handleRemoveCompletedTasks = async () => {
-        const completedTasks = tasks.filter(t => t.status === 'completed');
-        for (const task of completedTasks) {
-            await deleteTaskAction(task.id);
-            taskStore.remove(task.id);
-        }
-        setConfirmingAction(null);
-        setShowTaskListMenu(false);
+    const handleToggleHideCompleted = () => {
+        const newValue = !hideCompletedTasks;
+        setHideCompletedTasks(newValue);
+        localStorage.setItem('clarvu_hide_completed_tasks', newValue.toString());
     };
 
     const handleImportYesterdaysTasks = async () => {
@@ -612,14 +654,37 @@ export function DashboardClient({
         setShowTaskListMenu(false);
     };
 
-    const handleClearTheDay = () => {
-        setDayCleared(true);
+    const handleClearTheSlate = () => {
+        // Get current visible task IDs (this batch to clear)
+        const currentTaskIds = new Set(sortedTasks.map(t => t.id));
+
+        // Add current tasks to hidden list
+        const newHiddenIds = new Set([...hiddenTaskIds, ...currentTaskIds]);
+        setHiddenTaskIds(newHiddenIds);
+        localStorage.setItem('clarvu_hidden_task_ids', JSON.stringify(Array.from(newHiddenIds)));
+
+        // Track this batch as the last cleared for restoration
+        setLastClearedTaskIds(currentTaskIds);
+        localStorage.setItem('clarvu_last_cleared_task_ids', JSON.stringify(Array.from(currentTaskIds)));
+
         setConfirmingAction(null);
         setShowTaskListMenu(false);
     };
 
-    const handleRestoreDay = () => {
-        setDayCleared(false);
+    const handleRestoreSlate = () => {
+        // Only restore the last batch of cleared tasks
+        const newHiddenIds = new Set([...hiddenTaskIds].filter(id => !lastClearedTaskIds.has(id)));
+        setHiddenTaskIds(newHiddenIds);
+
+        if (newHiddenIds.size > 0) {
+            localStorage.setItem('clarvu_hidden_task_ids', JSON.stringify(Array.from(newHiddenIds)));
+        } else {
+            localStorage.removeItem('clarvu_hidden_task_ids');
+        }
+
+        // Clear the last cleared batch
+        setLastClearedTaskIds(new Set());
+        localStorage.removeItem('clarvu_last_cleared_task_ids');
     };
 
     const handleCancelConfirmation = () => {
@@ -1207,32 +1272,7 @@ export function DashboardClient({
                                                     borderColor: currentTheme.colors.border,
                                                 }}
                                             >
-                                                {confirmingAction === 'removeCompleted' ? (
-                                                    <div className="p-2">
-                                                        <p className="text-xs mb-2" style={{ color: currentTheme.colors.foreground }}>
-                                                            Delete all completed tasks?
-                                                        </p>
-                                                        <div className="flex gap-1">
-                                                            <button
-                                                                onClick={handleRemoveCompletedTasks}
-                                                                className="flex-1 px-2 py-1.5 rounded-lg text-xs font-medium"
-                                                                style={{
-                                                                    backgroundColor: currentTheme.colors.destructive || '#ef4444',
-                                                                    color: '#fff',
-                                                                }}
-                                                            >
-                                                                Yes, Delete
-                                                            </button>
-                                                            <button
-                                                                onClick={handleCancelConfirmation}
-                                                                className="flex-1 px-2 py-1.5 rounded-lg text-xs"
-                                                                style={{ backgroundColor: currentTheme.colors.muted }}
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ) : confirmingAction === 'importYesterday' ? (
+                                                {confirmingAction === 'importYesterday' ? (
                                                     <div className="p-2">
                                                         <p className="text-xs mb-2" style={{ color: currentTheme.colors.foreground }}>
                                                             Import incomplete tasks from yesterday?
@@ -1257,14 +1297,14 @@ export function DashboardClient({
                                                             </button>
                                                         </div>
                                                     </div>
-                                                ) : confirmingAction === 'clearDay' ? (
+                                                ) : confirmingAction === 'clearSlate' ? (
                                                     <div className="p-2">
                                                         <p className="text-xs mb-2" style={{ color: currentTheme.colors.foreground }}>
-                                                            Hide all tasks for today?
+                                                            Remove all tasks? You can restore them later.
                                                         </p>
                                                         <div className="flex gap-1">
                                                             <button
-                                                                onClick={handleClearTheDay}
+                                                                onClick={handleClearTheSlate}
                                                                 className="flex-1 px-2 py-1.5 rounded-lg text-xs font-medium"
                                                                 style={{
                                                                     backgroundColor: currentTheme.colors.destructive || '#ef4444',
@@ -1285,12 +1325,21 @@ export function DashboardClient({
                                                 ) : (
                                                     <>
                                                         <button
-                                                            onClick={() => setConfirmingAction('removeCompleted')}
+                                                            onClick={handleToggleHideCompleted}
                                                             className="w-full px-3 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-black/5 transition-colors"
                                                             style={{ color: currentTheme.colors.foreground }}
                                                         >
-                                                            <Trash2 className="w-4 h-4" style={{ color: currentTheme.colors.mutedForeground }} />
-                                                            Remove Completed
+                                                            {hideCompletedTasks ? (
+                                                                <>
+                                                                    <Eye className="w-4 h-4" style={{ color: currentTheme.colors.mutedForeground }} />
+                                                                    Show Completed
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <CheckCircle2 className="w-4 h-4" style={{ color: currentTheme.colors.mutedForeground }} />
+                                                                    Hide Completed
+                                                                </>
+                                                            )}
                                                         </button>
                                                         <button
                                                             onClick={() => setConfirmingAction('importYesterday')}
@@ -1301,23 +1350,22 @@ export function DashboardClient({
                                                             Import Yesterday's Incomplete
                                                         </button>
                                                         <div style={{ borderTop: `1px solid ${currentTheme.colors.border}` }} />
-                                                        {dayCleared ? (
+                                                        <button
+                                                            onClick={() => setConfirmingAction('clearSlate')}
+                                                            className="w-full px-3 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-black/5 transition-colors"
+                                                            style={{ color: currentTheme.colors.destructive || '#ef4444' }}
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                            Clear the Slate
+                                                        </button>
+                                                        {lastClearedTaskIds.size > 0 && (
                                                             <button
-                                                                onClick={handleRestoreDay}
+                                                                onClick={handleRestoreSlate}
                                                                 className="w-full px-3 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-black/5 transition-colors"
                                                                 style={{ color: currentTheme.colors.primary }}
                                                             >
                                                                 <Eye className="w-4 h-4" />
-                                                                Restore Day
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => setConfirmingAction('clearDay')}
-                                                                className="w-full px-3 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-black/5 transition-colors"
-                                                                style={{ color: currentTheme.colors.destructive || '#ef4444' }}
-                                                            >
-                                                                <X className="w-4 h-4" />
-                                                                Clear the Day
+                                                                Restore Slate
                                                             </button>
                                                         )}
                                                     </>
@@ -1332,22 +1380,15 @@ export function DashboardClient({
                             <div
                                 className={`flex-1 ${isDragging ? 'overflow-visible' : 'overflow-y-auto'}`}
                                 style={{ borderColor: currentTheme.colors.border }}>
-                                {dayCleared ? (
+                                {hiddenTaskIds.size > 0 && sortedTasks.length === 0 ? (
                                     <div className="py-12 text-center">
                                         <Eye className="w-10 h-10 mx-auto mb-3" style={{ color: currentTheme.colors.muted }} />
                                         <p className="text-sm" style={{ color: currentTheme.colors.mutedForeground }}>
-                                            Day cleared. Tasks are hidden.
+                                            Slate cleared. Ready for fresh tasks.
                                         </p>
-                                        <button
-                                            onClick={handleRestoreDay}
-                                            className="mt-3 px-4 py-2 rounded-lg text-sm font-medium"
-                                            style={{
-                                                backgroundColor: currentTheme.colors.primary,
-                                                color: currentTheme.colors.primaryForeground,
-                                            }}
-                                        >
-                                            Restore Day
-                                        </button>
+                                        <p className="text-xs mt-1" style={{ color: currentTheme.colors.mutedForeground }}>
+                                            Use the ⋮ menu to restore previous tasks.
+                                        </p>
                                     </div>
                                 ) : sortedTasks.length === 0 ? (
                                     <div className="py-12 text-center">
