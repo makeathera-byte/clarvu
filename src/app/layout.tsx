@@ -7,6 +7,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/lib/theme/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toaster } from "sonner";
+import { ServiceWorkerRegistration } from "@/components/pwa";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -90,6 +91,7 @@ export default function RootLayout({
           </Suspense>
           <Analytics />
           <SpeedInsights />
+          <ServiceWorkerRegistration />
         </body>
       </html>
     );
