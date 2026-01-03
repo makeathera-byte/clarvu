@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { InstallPrompt } from '@/components/pwa';
 
 interface AccountMenuProps {
     userName: string;
@@ -153,6 +154,9 @@ export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
 
                         {/* Menu Items */}
                         <div className="py-2">
+                            {/* PWA Install Prompt */}
+                            <InstallPrompt />
+
                             {/* Settings */}
                             <Link
                                 href="/settings/profile"

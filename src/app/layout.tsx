@@ -24,7 +24,19 @@ export const metadata: Metadata = {
   description: "Clarvu helps business owners track focus, eliminate wasted time, and build real productivity with clarity.",
   icons: {
     icon: '/clarvu-icon.png',
-    apple: '/clarvu-icon.png',
+    apple: '/icon-512.png',
+  },
+  manifest: '/manifest.json',
+  themeColor: '#0b0b0b',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Clarvu',
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
   },
 };
 
