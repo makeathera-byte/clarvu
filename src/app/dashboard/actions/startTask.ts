@@ -20,6 +20,17 @@ export async function startTaskAction(taskId: string): Promise<StartTaskResult> 
     const now = new Date();
     const endsAt = new Date(now.getTime() + 30 * 60000); // 30 minutes later
 
+    // SINGLE ACTIVE TASK RULE: End any existing in_progress tasks
+    await (supabase as any)
+        .from('tasks')
+        .update({
+            status: 'completed',
+            end_time: now.toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'in_progress')
+        .neq('id', taskId); // Don't update the task we're about to start
+
     // Update task to in_progress
     const { error: taskError } = await (supabase as any)
         .from('tasks')

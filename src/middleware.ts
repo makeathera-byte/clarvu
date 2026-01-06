@@ -44,8 +44,12 @@ export async function middleware(request: NextRequest) {
         '/api/auth/callback',
     ];
 
+    // PWA and static files that should never be redirected
+    const pwaFiles = ['/sw.js', '/manifest.json', '/workbox-', '/offline.html'];
+    const isPwaFile = pwaFiles.some(file => pathname.startsWith(file));
+
     // Check if current path is public
-    const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith('/api/'));
+    const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith('/api/')) || isPwaFile;
 
     // If user is not authenticated and trying to access protected route
     if (!user && !isPublicRoute) {
@@ -74,7 +78,10 @@ export const config = {
          * - favicon.ico (favicon file)
          * - public folder
          * - icon.png
+         * - sw.js (service worker)
+         * - manifest.json (PWA manifest)
+         * - workbox files
          */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|workbox-|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 };

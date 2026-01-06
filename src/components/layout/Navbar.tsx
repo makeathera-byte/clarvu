@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
-import { LayoutDashboard, Timer, Settings, LogOut, Menu, X, BarChart3, Sparkles, Shield, Target } from 'lucide-react';
+import { LayoutDashboard, Timer, Settings, LogOut, Menu, X, BarChart3, Sparkles, Shield, Target, Calendar } from 'lucide-react';
 import { NotificationBadge } from '@/components/notifications';
 import { Logo } from '@/components/layout/Logo';
 import { AccountMenu } from '@/components/navbar/AccountMenu';
@@ -18,6 +18,7 @@ interface NavbarProps {
 const getNavItems = (isAdmin: boolean) => [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/routine', label: 'Routine', icon: Sparkles },
+    { href: '/calendar', label: 'Calendar', icon: Calendar },
     { href: '/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/dashboard/timer', label: 'Timer', icon: Timer },
     { href: '/goals', label: 'Goals', icon: Target },

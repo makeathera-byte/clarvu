@@ -21,6 +21,7 @@ interface CalendarState {
     remove: (id: string) => void;
     setLoading: (loading: boolean) => void;
     getTodayEvents: () => CalendarEvent[];
+    getEventsByDateRange: (startDate: Date, endDate: Date) => CalendarEvent[];
 }
 
 export const useCalendarStore = create<CalendarState>((set, get) => ({
@@ -56,6 +57,22 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
         return get().events.filter((e) => {
             const start = new Date(e.start_time);
             return start >= today && start < tomorrow;
+        });
+    },
+
+    // Get events within a date range for calendar views
+    getEventsByDateRange: (startDate: Date, endDate: Date) => {
+        const { events } = get();
+        return events.filter((event) => {
+            const eventStart = new Date(event.start_time);
+            const eventEnd = new Date(event.end_time);
+
+            // Include if event starts, ends, or spans the date range
+            return (
+                (eventStart >= startDate && eventStart <= endDate) ||
+                (eventEnd >= startDate && eventEnd <= endDate) ||
+                (eventStart <= startDate && eventEnd >= endDate)
+            );
         });
     },
 }));

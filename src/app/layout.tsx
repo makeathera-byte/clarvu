@@ -8,16 +8,21 @@ import { ThemeProvider } from "@/lib/theme/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toaster } from "sonner";
 import { ServiceWorkerRegistration } from "@/components/pwa";
+import { PWALoadingScreen } from "@/components/pwa/PWALoadingScreen";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: 'swap',
+  preload: true,
 });
 
 const lora = Lora({
   variable: "--font-lora",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+  display: 'swap',
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -81,6 +86,7 @@ export default function RootLayout({
         <body
           className={`${inter.variable} ${lora.variable} font-sans antialiased`}
         >
+          <PWALoadingScreen />
           <Suspense fallback={<LoadingFallback />}>
             <ThemeProvider>
               <ErrorBoundary>
