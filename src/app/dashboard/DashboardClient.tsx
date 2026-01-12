@@ -515,6 +515,15 @@ export function DashboardClient({
                 const elapsedSeconds = state.stopTaskCountUp();
                 const elapsedMinutes = Math.round(elapsedSeconds / 60);
 
+                console.log('[DEBUG] Task completion:', {
+                    taskId: task.id,
+                    elapsedSeconds,
+                    elapsedMinutes,
+                    taskCountUpSeconds: state.taskCountUpSeconds,
+                    taskCountUpStartedAt: state.taskCountUpStartedAt,
+                    taskCountUpIsRunning: state.taskCountUpIsRunning,
+                });
+
                 // Complete the task with count-up time
                 const result = await updateTaskAction({
                     taskId: task.id,
