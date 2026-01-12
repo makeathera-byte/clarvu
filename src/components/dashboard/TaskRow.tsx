@@ -95,23 +95,37 @@ export function TaskRow({
         taskCountUpId,
         taskCountUpSeconds,
         taskCountUpIsRunning,
-        incrementTaskCountUp,
+        taskCountUpStartedAt,
         pauseTaskCountUp,
         resumeTaskCountUp,
     } = useTimerStore();
 
     const hasActiveCountUp = taskCountUpId === task.id;
 
-    // Count-up timer interval
+    // Calculate real-time display seconds for count-up timer
+    const [displayTick, setDisplayTick] = useState(0);
+
+    // Force re-render every 100ms for smooth display
     useEffect(() => {
         if (!hasActiveCountUp || !taskCountUpIsRunning) return;
 
         const interval = setInterval(() => {
-            incrementTaskCountUp();
-        }, 1000);
+            setDisplayTick(tick => tick + 1);
+        }, 100);
 
         return () => clearInterval(interval);
-    }, [hasActiveCountUp, taskCountUpIsRunning, incrementTaskCountUp]);
+    }, [hasActiveCountUp, taskCountUpIsRunning]);
+
+    // Calculate actual display seconds based on timestamp
+    const displaySeconds = (() => {
+        if (!hasActiveCountUp) return 0;
+
+        if (taskCountUpIsRunning && taskCountUpStartedAt) {
+            const elapsed = Math.floor((Date.now() - taskCountUpStartedAt) / 1000);
+            return taskCountUpSeconds + elapsed;
+        }
+        return taskCountUpSeconds;
+    })();
 
     // State for custom time entry
     const [customTimeValue, setCustomTimeValue] = useState('');
@@ -366,7 +380,7 @@ export function TaskRow({
                             >
                                 <Timer className="w-4 h-4" style={{ color: currentTheme.colors.primary }} />
                                 <span className="text-sm font-mono font-bold" style={{ color: currentTheme.colors.primary }}>
-                                    {formatTimeWithHours(taskCountUpSeconds)}
+                                    {formatTimeWithHours(displaySeconds)}
                                 </span>
                                 <button
                                     onClick={(e) => {
