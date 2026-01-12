@@ -111,7 +111,54 @@ export function TimerScreen() {
     // Determine which timer mode we're in
     const isTaskMode = !!taskId;
     const isTaskCountUpMode = !!taskCountUpId;
-    const seconds = isTaskMode ? taskRemainingSeconds : (isTaskCountUpMode ? taskCountUpSeconds : (countUpMode ? countUpSeconds : localSeconds));
+
+    // Calculate real-time seconds based on timestamps
+    const {
+        focusStartedAt,
+        taskCountUpStartedAt
+    } = useTimerStore();
+
+    // Computed display seconds based on timestamps
+    const [displayTick, setDisplayTick] = useState(0);
+
+    // Force re-render every 100ms to update display
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setDisplayTick(tick => tick + 1);
+        }, 100);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Calculate actual seconds to display
+    const seconds = (() => {
+        if (isTaskMode) {
+            return taskRemainingSeconds;
+        }
+
+        if (isTaskCountUpMode) {
+            if (taskCountUpIsRunning && taskCountUpStartedAt) {
+                const elapsed = Math.floor((Date.now() - taskCountUpStartedAt) / 1000);
+                return taskCountUpSeconds + elapsed;
+            }
+            return taskCountUpSeconds;
+        }
+
+        if (countUpMode) {
+            if (isLocalRunning && focusStartedAt) {
+                const elapsed = Math.floor((Date.now() - focusStartedAt) / 1000);
+                return countUpSeconds + elapsed;
+            }
+            return countUpSeconds;
+        }
+
+        // Countdown mode
+        if (isLocalRunning && focusStartedAt) {
+            const elapsed = Math.floor((Date.now() - focusStartedAt) / 1000);
+            return Math.max(0, localSeconds - elapsed);
+        }
+        return localSeconds;
+    })();
+
     const isRunning = isTaskMode ? isTaskRunning : (isTaskCountUpMode ? taskCountUpIsRunning : isLocalRunning);
 
     // Calculate total seconds for progress bar
@@ -137,16 +184,19 @@ export function TimerScreen() {
         return () => clearInterval(interval);
     }, [isTaskMode, isTaskRunning, taskRemainingSeconds, decrementTimer]);
 
-    // Countdown timer for local mode - using store action
+    // Auto-pause focus countdown when it reaches 0
     useEffect(() => {
-        if (isTaskMode || !isLocalRunning || localSeconds <= 0 || countUpMode) return;
+        if (isTaskMode || countUpMode || !isLocalRunning) return;
 
-        const interval = setInterval(() => {
-            decrementFocusTimer();
-        }, 1000);
+        if (focusStartedAt && isLocalRunning) {
+            const elapsed = Math.floor((Date.now() - focusStartedAt) / 1000);
+            const remaining = Math.max(0, localSeconds - elapsed);
 
-        return () => clearInterval(interval);
-    }, [isTaskMode, isLocalRunning, localSeconds, countUpMode, decrementFocusTimer]);
+            if (remaining === 0) {
+                pauseFocusTimer();
+            }
+        }
+    }, [isTaskMode, countUpMode, isLocalRunning, focusStartedAt, localSeconds, pauseFocusTimer, displayTick]);
 
     // Auto-start break when focus timer reaches 0
     useEffect(() => {
@@ -175,28 +225,21 @@ export function TimerScreen() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [menuOpen]);
 
-    // Task count-up timer effect (for individual task timing)
+    // Auto-pause task count-up when it reaches max limit
     useEffect(() => {
         if (!isTaskCountUpMode || !taskCountUpIsRunning) return;
 
-        const interval = setInterval(() => {
-            const { incrementTaskCountUp } = useTimerStore.getState();
-            incrementTaskCountUp();
-        }, 1000);
+        const MAX_TASK_COUNTUP_SECONDS = 12 * 60 * 60;
+        if (taskCountUpStartedAt && taskCountUpIsRunning) {
+            const elapsed = Math.floor((Date.now() - taskCountUpStartedAt) / 1000);
+            const total = taskCountUpSeconds + elapsed;
 
-        return () => clearInterval(interval);
-    }, [isTaskCountUpMode, taskCountUpIsRunning]);
+            if (total >= MAX_TASK_COUNTUP_SECONDS) {
+                pauseTaskCountUp();
+            }
+        }
+    }, [isTaskCountUpMode, taskCountUpIsRunning, taskCountUpStartedAt, taskCountUpSeconds, pauseTaskCountUp, displayTick]);
 
-    // Count-up timer effect (stopwatch mode) - using store action
-    useEffect(() => {
-        if (!countUpMode || !isLocalRunning || isTaskMode || isTaskCountUpMode) return;
-
-        const interval = setInterval(() => {
-            incrementCountUp();
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [countUpMode, isLocalRunning, isTaskMode, isTaskCountUpMode, incrementCountUp]);
 
     // Menu handler functions - using store actions
     const handleAddTime = (addSecs: number) => {

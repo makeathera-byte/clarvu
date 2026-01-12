@@ -36,6 +36,8 @@ export function CalendarHeader() {
                 return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
             case 'month':
                 return selectedDate.toLocaleDateString('en-US', options);
+            case 'year':
+                return selectedDate.getFullYear().toString();
             default:
                 return '';
         }

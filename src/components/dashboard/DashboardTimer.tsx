@@ -34,6 +34,7 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
     const taskCountUpTitle = useTimerStore((state) => state.taskCountUpTitle);
     const taskCountUpSeconds = useTimerStore((state) => state.taskCountUpSeconds);
     const taskCountUpIsRunning = useTimerStore((state) => state.taskCountUpIsRunning);
+    const taskCountUpStartedAt = useTimerStore((state) => state.taskCountUpStartedAt);
 
     const {
         // Task timer state
@@ -51,6 +52,7 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
         focusTotalSeconds,
         focusMode,
         focusIsRunning,
+        focusStartedAt,
         countUpMode,
         countUpSeconds,
         // Task count-up actions (state already destructured above for reactivity)
@@ -90,6 +92,9 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
     const [menuCustomMinutes, setMenuCustomMinutes] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
 
+    // Force re-render every 100ms for smooth timer display
+    const [displayTick, setDisplayTick] = useState(0);
+
     // Detect active task timer mode - based on taskId, not isOpen (modal state)
     const isTaskMode = !!activeTaskId;
     const isTaskCountUpMode = !!taskCountUpId; // New: detect task count-up mode
@@ -109,8 +114,36 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
         return 30 * 60; // fallback to 30 min
     })();
 
-    // Use task timer values when in task mode, task count-up when active, or count-up seconds in count-up mode
-    const displaySeconds = isTaskMode ? taskRemainingSeconds : (isTaskCountUpMode ? taskCountUpSeconds : (countUpMode ? countUpSeconds : seconds));
+    // Calculate real-time display seconds based on timestamps
+    const displaySeconds = (() => {
+        if (isTaskMode) {
+            return taskRemainingSeconds;
+        }
+
+        if (isTaskCountUpMode) {
+            if (taskCountUpIsRunning && taskCountUpStartedAt) {
+                const elapsed = Math.floor((Date.now() - taskCountUpStartedAt) / 1000);
+                return taskCountUpSeconds + elapsed;
+            }
+            return taskCountUpSeconds;
+        }
+
+        if (countUpMode) {
+            if (isRunning && focusStartedAt) {
+                const elapsed = Math.floor((Date.now() - focusStartedAt) / 1000);
+                return countUpSeconds + elapsed;
+            }
+            return countUpSeconds;
+        }
+
+        // Countdown mode
+        if (isRunning && focusStartedAt) {
+            const elapsed = Math.floor((Date.now() - focusStartedAt) / 1000);
+            return Math.max(0, seconds - elapsed);
+        }
+        return seconds;
+    })();
+
     const displayIsRunning = isTaskMode ? isTaskRunning : (isTaskCountUpMode ? taskCountUpIsRunning : isRunning);
     const displayTotalSeconds = isTaskMode ? taskTotalSeconds : (isTaskCountUpMode ? 0 : totalSeconds); // Count-up has no total
 
@@ -143,17 +176,27 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [seconds, totalSeconds, mode, isRunning]);
 
-    // Timer countdown effect for local Pomodoro timer
+    // Force re-render every 100ms to update display in real-time
     useEffect(() => {
-        if (isTaskMode) return; // Don't run local timer when in task mode
-        if (!isRunning || countUpMode) return;
+        const interval = setInterval(() => {
+            setDisplayTick(tick => tick + 1);
+        }, 100);
+        return () => clearInterval(interval);
+    }, []);
 
-        const intervalId = setInterval(() => {
-            decrementFocusTimer();
-        }, 1000);
+    // Auto-pause focus countdown when it reaches 0
+    useEffect(() => {
+        if (isTaskMode || countUpMode || !isRunning) return;
 
-        return () => clearInterval(intervalId);
-    }, [isRunning, isTaskMode, countUpMode, decrementFocusTimer]);
+        if (focusStartedAt && isRunning) {
+            const elapsed = Math.floor((Date.now() - focusStartedAt) / 1000);
+            const remaining = Math.max(0, seconds - elapsed);
+
+            if (remaining === 0) {
+                pauseFocusTimer();
+            }
+        }
+    }, [isTaskMode, countUpMode, isRunning, focusStartedAt, seconds, pauseFocusTimer, displayTick]);
 
     // Auto-start break when focus timer reaches 0
     useEffect(() => {
@@ -201,17 +244,6 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
         }
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [menuOpen]);
-
-    // Count-up timer effect (stopwatch mode)
-    useEffect(() => {
-        if (!countUpMode || !isRunning || isTaskMode) return;
-
-        const intervalId = setInterval(() => {
-            incrementCountUp();
-        }, 1000);
-
-        return () => clearInterval(intervalId);
-    }, [countUpMode, isRunning, isTaskMode, incrementCountUp]);
 
     // Menu handler functions - now using store actions
     const handleAddTime = (addSeconds: number) => {

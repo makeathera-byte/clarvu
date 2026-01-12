@@ -33,17 +33,18 @@ export const metadata: Metadata = {
     apple: '/icon-512.png',
   },
   manifest: '/manifest.json',
-  themeColor: '#0b0b0b',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Clarvu',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#0b0b0b',
 };
 
 function LoadingFallback() {

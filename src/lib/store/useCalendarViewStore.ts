@@ -43,6 +43,9 @@ export const useCalendarViewStore = create<CalendarViewState>((set, get) => ({
             case 'month':
                 newDate.setMonth(newDate.getMonth() + 1);
                 break;
+            case 'year':
+                newDate.setFullYear(newDate.getFullYear() + 1);
+                break;
         }
 
         set({ selectedDate: newDate });
@@ -61,6 +64,9 @@ export const useCalendarViewStore = create<CalendarViewState>((set, get) => ({
                 break;
             case 'month':
                 newDate.setMonth(newDate.getMonth() - 1);
+                break;
+            case 'year':
+                newDate.setFullYear(newDate.getFullYear() - 1);
                 break;
         }
 

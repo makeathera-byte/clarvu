@@ -16,6 +16,7 @@ interface TimerState {
     focusTotalSeconds: number;
     focusMode: 'focus' | 'break' | 'custom' | 'pomodoro';
     focusIsRunning: boolean;
+    focusStartedAt: number | null; // Timestamp when focus timer started
     countUpMode: boolean;
     countUpSeconds: number;
 
@@ -24,6 +25,7 @@ interface TimerState {
     taskCountUpTitle: string | null;
     taskCountUpSeconds: number;
     taskCountUpIsRunning: boolean;
+    taskCountUpStartedAt: number | null; // Timestamp when task count-up started
 
     // Pomodoro settings (customizable)
     pomodoroFocusMins: number;
@@ -94,6 +96,7 @@ export const useTimerStore = create<TimerState>()(
             focusTotalSeconds: 25 * 60,
             focusMode: 'focus' as const,
             focusIsRunning: false,
+            focusStartedAt: null,
             countUpMode: false,
             countUpSeconds: 0,
 
@@ -102,6 +105,7 @@ export const useTimerStore = create<TimerState>()(
             taskCountUpTitle: null,
             taskCountUpSeconds: 0,
             taskCountUpIsRunning: false,
+            taskCountUpStartedAt: null,
 
             // Pomodoro settings (customizable defaults)
             pomodoroFocusMins: 25,
@@ -229,16 +233,35 @@ export const useTimerStore = create<TimerState>()(
             },
 
             startFocusTimer: () => {
-                set({ focusIsRunning: true });
+                set({ focusIsRunning: true, focusStartedAt: Date.now() });
             },
 
             pauseFocusTimer: () => {
-                set({ focusIsRunning: false });
+                const state = get();
+                if (state.focusStartedAt && state.focusIsRunning) {
+                    const elapsed = Math.floor((Date.now() - state.focusStartedAt) / 1000);
+                    if (state.countUpMode) {
+                        set({
+                            focusIsRunning: false,
+                            focusStartedAt: null,
+                            countUpSeconds: state.countUpSeconds + elapsed
+                        });
+                    } else {
+                        set({
+                            focusIsRunning: false,
+                            focusStartedAt: null,
+                            focusSeconds: Math.max(0, state.focusSeconds - elapsed)
+                        });
+                    }
+                } else {
+                    set({ focusIsRunning: false, focusStartedAt: null });
+                }
             },
 
             resetFocusTimer: () => {
                 set((state) => ({
                     focusIsRunning: false,
+                    focusStartedAt: null,
                     focusSeconds: state.countUpMode ? 0 : state.focusTotalSeconds,
                     countUpSeconds: 0,
                 }));
@@ -261,6 +284,7 @@ export const useTimerStore = create<TimerState>()(
                 set((state) => ({
                     countUpMode: !state.countUpMode,
                     focusIsRunning: false,
+                    focusStartedAt: null,
                     countUpSeconds: 0,
                     focusSeconds: state.countUpMode ? 25 * 60 : 0,
                     focusTotalSeconds: state.countUpMode ? 25 * 60 : 0,
@@ -274,7 +298,7 @@ export const useTimerStore = create<TimerState>()(
             },
 
             resetCountUp: () => {
-                set({ countUpSeconds: 0, focusIsRunning: false });
+                set({ countUpSeconds: 0, focusIsRunning: false, focusStartedAt: null });
             },
 
             // Task count-up actions
@@ -284,15 +308,26 @@ export const useTimerStore = create<TimerState>()(
                     taskCountUpTitle: taskTitle,
                     taskCountUpSeconds: 0,
                     taskCountUpIsRunning: true,
+                    taskCountUpStartedAt: Date.now(),
                 });
             },
 
             pauseTaskCountUp: () => {
-                set({ taskCountUpIsRunning: false });
+                const state = get();
+                if (state.taskCountUpStartedAt && state.taskCountUpIsRunning) {
+                    const elapsed = Math.floor((Date.now() - state.taskCountUpStartedAt) / 1000);
+                    set({
+                        taskCountUpIsRunning: false,
+                        taskCountUpStartedAt: null,
+                        taskCountUpSeconds: state.taskCountUpSeconds + elapsed
+                    });
+                } else {
+                    set({ taskCountUpIsRunning: false, taskCountUpStartedAt: null });
+                }
             },
 
             resumeTaskCountUp: () => {
-                set({ taskCountUpIsRunning: true });
+                set({ taskCountUpIsRunning: true, taskCountUpStartedAt: Date.now() });
             },
 
             incrementTaskCountUp: () => {
@@ -310,12 +345,17 @@ export const useTimerStore = create<TimerState>()(
             },
 
             stopTaskCountUp: (): number => {
-                const elapsed = get().taskCountUpSeconds;
+                const state = get();
+                let elapsed = state.taskCountUpSeconds;
+                if (state.taskCountUpStartedAt && state.taskCountUpIsRunning) {
+                    elapsed += Math.floor((Date.now() - state.taskCountUpStartedAt) / 1000);
+                }
                 set({
                     taskCountUpId: null,
                     taskCountUpTitle: null,
                     taskCountUpSeconds: 0,
                     taskCountUpIsRunning: false,
+                    taskCountUpStartedAt: null,
                 });
                 return elapsed;
             },
@@ -361,6 +401,7 @@ export const useTimerStore = create<TimerState>()(
                 focusTotalSeconds: state.focusTotalSeconds,
                 focusMode: state.focusMode,
                 focusIsRunning: state.focusIsRunning, // Preserve running state
+                focusStartedAt: state.focusStartedAt,
                 countUpMode: state.countUpMode,
                 countUpSeconds: state.countUpSeconds,
                 // Task-specific count-up timer fields
@@ -368,6 +409,7 @@ export const useTimerStore = create<TimerState>()(
                 taskCountUpTitle: state.taskCountUpTitle,
                 taskCountUpSeconds: state.taskCountUpSeconds,
                 taskCountUpIsRunning: state.taskCountUpIsRunning,
+                taskCountUpStartedAt: state.taskCountUpStartedAt,
                 // Pomodoro settings (persisted)
                 pomodoroFocusMins: state.pomodoroFocusMins,
                 pomodoroBreakMins: state.pomodoroBreakMins,
