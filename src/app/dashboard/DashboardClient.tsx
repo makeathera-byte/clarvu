@@ -519,6 +519,7 @@ export function DashboardClient({
                 const result = await updateTaskAction({
                     taskId: task.id,
                     status: 'completed',
+                    durationMinutes: elapsedMinutes > 0 ? elapsedMinutes : undefined,
                 });
                 if (result.success && result.task) {
                     taskStore.addOrUpdate(result.task as any);
