@@ -1026,7 +1026,7 @@ export function DashboardTimer({ isDragging, isDraggingCompleted }: DashboardTim
                         }}
                     >
                         <CheckCircle className="w-4 h-4" />
-                        Complete Task ({Math.round(taskCountUpSeconds / 60)}m)
+                        Complete Task
                     </motion.button>
                 )}
                 {isTaskMode && !isTaskCountUpMode && (

@@ -1034,7 +1034,7 @@ export function TimerScreen() {
                                 }}
                             >
                                 <CheckCircle className="w-5 h-5" />
-                                Complete Task ({Math.round(taskCountUpSeconds / 60)}m)
+                                Complete Task
                             </motion.button>
                         )}
 
