@@ -100,9 +100,9 @@ export async function updateTaskAction(data: UpdateTaskData): Promise<UpdateTask
         return { error: error.message };
     }
 
-    // Don't revalidate - let realtime handle the update for instant UI
-    // Revalidation causes delay. Realtime subscription will update the UI immediately.
-    // revalidatePath('/dashboard');
+    // Revalidate the dashboard to ensure fresh data on page refresh
+    // This ensures that when users refresh the page, they see their latest changes
+    revalidatePath('/dashboard');
 
     return {
         success: true,
