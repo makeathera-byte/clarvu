@@ -1,0 +1,24 @@
+# Clarvu - Productivity Tracking App
+# Allow all search engines to index public content
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /ppadminpp/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /analytics/
+Disallow: /focus/
+Disallow: /goals/
+Disallow: /calendar/
+Disallow: /notifications/
+Disallow: /tasks/
+Disallow: /debug/
+Disallow: /test-suggestions/
+
+# Sitemap location
+Sitemap: https://clarvu.com/sitemap.xml
+
+# Crawl-delay to be respectful of server resources
+Crawl-delay: 1

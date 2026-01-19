@@ -26,17 +26,84 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Clarvu — See Where Your Time Actually Goes",
-  description: "Clarvu helps business owners track focus, eliminate wasted time, and build real productivity with clarity.",
+  metadataBase: new URL('https://clarvu.com'),
+  title: {
+    default: "Clarvu — Productivity Tracker for Business Owners",
+    template: "%s | Clarvu",
+  },
+  description: "Track focus, eliminate wasted time, and build real productivity. Clarvu helps business owners with deep work analytics, AI insights, and time tracking that actually works.",
+  keywords: [
+    'productivity tracker',
+    'time tracking app',
+    'focus tracking software',
+    'productivity app for business owners',
+    'deep work tracker',
+    'time management app',
+    'focus session timer',
+    'productivity analytics',
+    'AI productivity coach',
+    'business productivity tool',
+    'eliminate wasted time',
+    'focus analytics',
+    'productivity insights',
+    'task tracking',
+    'productivity score',
+  ],
+  authors: [{ name: 'Clarvu Team' }],
+  creator: 'Clarvu',
+  publisher: 'Clarvu',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   icons: {
     icon: '/clarvu-icon.png',
     apple: '/icon-512.png',
+    shortcut: '/clarvu-icon.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Clarvu',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://clarvu.com',
+    siteName: 'Clarvu',
+    title: 'Clarvu — Productivity Tracker for Business Owners',
+    description: 'Track focus, eliminate wasted time, and build real productivity. Deep work analytics, AI insights, and time tracking that actually works.',
+    images: [
+      {
+        url: '/dashboard_preview_hero_1765838464750.png',
+        width: 1200,
+        height: 630,
+        alt: 'Clarvu Dashboard - Productivity Tracking',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Clarvu — Productivity Tracker for Business Owners',
+    description: 'Track focus, eliminate wasted time, and build real productivity with clarity.',
+    images: ['/dashboard_preview_hero_1765838464750.png'],
+    creator: '@clarvu',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://clarvu.com',
   },
 };
 
