@@ -9,6 +9,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toaster } from "sonner";
 import { ServiceWorkerRegistration } from "@/components/pwa";
 import { PWALoadingScreen } from "@/components/pwa/PWALoadingScreen";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { getGoogleClientId } from "@/lib/env";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -156,12 +158,14 @@ export default function RootLayout({
         >
           <PWALoadingScreen />
           <Suspense fallback={<LoadingFallback />}>
-            <ThemeProvider>
-              <ErrorBoundary>
-                {children}
-              </ErrorBoundary>
-              <Toaster position="bottom-right" theme="system" />
-            </ThemeProvider>
+            <GoogleOAuthProvider clientId={getGoogleClientId()}>
+              <ThemeProvider>
+                <ErrorBoundary>
+                  {children}
+                </ErrorBoundary>
+                <Toaster position="bottom-right" theme="system" />
+              </ThemeProvider>
+            </GoogleOAuthProvider>
           </Suspense>
           <Analytics />
           <SpeedInsights />

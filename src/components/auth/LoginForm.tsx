@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FcGoogle } from 'react-icons/fc';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { loginWithEmail } from '@/app/auth/actions/login';
-import { signInWithGoogle } from '@/app/auth/actions/oauth';
+import { signInWithGoogleIdToken } from '@/app/auth/actions/googleAuth';
 import Link from 'next/link';
 
 export function LoginForm() {
@@ -36,15 +36,22 @@ export function LoginForm() {
         }
     };
 
-    const handleGoogleLogin = async () => {
+    const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
         setError('');
         setLoading(true);
 
         try {
-            const result = await signInWithGoogle();
+            if (!credentialResponse.credential) {
+                setError('No credential received from Google');
+                setLoading(false);
+                return;
+            }
 
-            if (result.success && result.url) {
-                window.location.href = result.url;
+            const result = await signInWithGoogleIdToken(credentialResponse.credential);
+
+            if (result.success) {
+                router.push('/dashboard');
+                router.refresh();
             } else {
                 setError(result.error || 'Google sign-in failed');
                 setLoading(false);
@@ -53,6 +60,11 @@ export function LoginForm() {
             setError('An unexpected error occurred');
             setLoading(false);
         }
+    };
+
+    const handleGoogleError = () => {
+        setError('Google sign-in was cancelled or failed');
+        setLoading(false);
     };
 
     return (
@@ -82,15 +94,18 @@ export function LoginForm() {
             )}
 
             {/* Google Sign In */}
-            <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="auth-button-google w-full"
-            >
-                <FcGoogle className="w-5 h-5" />
-                <span>Sign in with Google</span>
-            </button>
+            <div className="w-full flex justify-center">
+                <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    useOneTap
+                    text="signin_with"
+                    shape="rectangular"
+                    theme="outline"
+                    size="large"
+                    width="384"
+                />
+            </div>
 
             {/* Divider */}
             <div className="relative">

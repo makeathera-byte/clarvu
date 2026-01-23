@@ -13,6 +13,8 @@ import { AccountMenu } from '@/components/navbar/AccountMenu';
 interface NavbarProps {
     isAdmin?: boolean;
     userName?: string;
+    userEmail?: string | null;
+    userAvatar?: string | null;
 }
 
 const getNavItems = (isAdmin: boolean) => [
@@ -26,7 +28,7 @@ const getNavItems = (isAdmin: boolean) => [
     ...(isAdmin ? [{ href: '/ppadminpp', label: 'Admin', icon: Shield }] : []),
 ];
 
-export function Navbar({ isAdmin = false, userName = 'User' }: NavbarProps) {
+export function Navbar({ isAdmin = false, userName = 'User', userEmail, userAvatar }: NavbarProps) {
     const pathname = usePathname();
     const { currentTheme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
@@ -107,6 +109,8 @@ export function Navbar({ isAdmin = false, userName = 'User' }: NavbarProps) {
                         {/* Account Menu (includes trial status and logout) */}
                         <AccountMenu
                             userName={userName}
+                            userEmail={userEmail}
+                            userAvatar={userAvatar}
                             themeColors={{
                                 card: currentTheme.colors.card,
                                 border: currentTheme.colors.border,

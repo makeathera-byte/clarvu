@@ -27,6 +27,8 @@ interface ProfileTheme {
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
     let initialThemeId = defaultTheme.id;
     let userName = 'User';
+    let userEmail: string | null = null;
+    let userAvatar: string | null = null;
 
     try {
         const supabase = await createClient();
@@ -36,6 +38,10 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
         // Load theme and user name from profile if user is authenticated
         if (user) {
+            // Get user email and avatar from auth user metadata
+            userEmail = user.email || null;
+            userAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('theme_name, full_name, country')
@@ -63,7 +69,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
         <ThemeProvider initialThemeId={initialThemeId}>
             <div className="min-h-screen">
                 <BackgroundRenderer />
-                <Navbar userName={userName} />
+                <Navbar userName={userName} userEmail={userEmail} userAvatar={userAvatar} />
                 <FocusSoundPanel />
                 <RealtimeProvider userId={null}>
                     {children}

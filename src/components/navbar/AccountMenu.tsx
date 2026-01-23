@@ -16,6 +16,8 @@ import { InstallPrompt } from '@/components/pwa';
 
 interface AccountMenuProps {
     userName: string;
+    userEmail?: string | null;
+    userAvatar?: string | null;
     themeColors: {
         card: string;
         border: string;
@@ -26,7 +28,7 @@ interface AccountMenuProps {
     };
 }
 
-export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
+export function AccountMenu({ userName, userEmail, userAvatar, themeColors }: AccountMenuProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [trialDays, setTrialDays] = useState<number | null>(null);
     const [loggingOut, setLoggingOut] = useState(false);
@@ -89,9 +91,17 @@ export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
                     color: themeColors.foreground,
                 }}
             >
-                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: themeColors.primary }}>
-                    <User className="w-4 h-4" style={{ color: 'white' }} />
-                </div>
+                {userAvatar ? (
+                    <img
+                        src={userAvatar}
+                        alt={displayName}
+                        className="w-7 h-7 rounded-full object-cover"
+                    />
+                ) : (
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: themeColors.primary }}>
+                        <User className="w-4 h-4" style={{ color: 'white' }} />
+                    </div>
+                )}
                 <span className="hidden md:block text-sm font-medium">{displayName}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -113,15 +123,23 @@ export function AccountMenu({ userName, themeColors }: AccountMenuProps) {
                         {/* User Info Section */}
                         <div className="p-4 border-b" style={{ borderColor: themeColors.border }}>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: themeColors.primary }}>
-                                    <User className="w-5 h-5" style={{ color: 'white' }} />
-                                </div>
+                                {userAvatar ? (
+                                    <img
+                                        src={userAvatar}
+                                        alt={displayName}
+                                        className="w-10 h-10 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: themeColors.primary }}>
+                                        <User className="w-5 h-5" style={{ color: 'white' }} />
+                                    </div>
+                                )}
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold truncate" style={{ color: themeColors.foreground }}>
                                         {displayName}
                                     </p>
-                                    <p className="text-xs" style={{ color: themeColors.mutedForeground }}>
-                                        Account
+                                    <p className="text-xs truncate" style={{ color: themeColors.mutedForeground }}>
+                                        {userEmail || 'Account'}
                                     </p>
                                 </div>
                             </div>

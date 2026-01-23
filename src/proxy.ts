@@ -1,6 +1,17 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+/**
+ * Middleware proxy for Supabase authentication
+ * 
+ * This middleware handles session refresh and route protection.
+ * It works with both:
+ * - Supabase-managed OAuth (legacy)
+ * - Google Identity Services with signInWithIdToken (new approach)
+ * 
+ * The getUser() check is compatible with both authentication methods
+ * as the session format remains the same regardless of how it was created.
+ */
 export async function proxy(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,

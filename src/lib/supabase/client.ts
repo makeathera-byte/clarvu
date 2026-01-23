@@ -5,18 +5,22 @@ import { Database } from './types';
  * Client-side Supabase client using SSR for proper cookie handling
  * Uses NEXT_PUBLIC_ env vars which are exposed to the browser
  * This ensures cookies are properly set and accessible to middleware
+ * 
+ * Supports both authentication methods:
+ * - Email/password authentication
+ * - Google Identity Services via signInWithIdToken (Clarvu-owned OAuth)
  */
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (typeof window !== 'undefined') {
-    // Only log in browser
-    if (!supabaseUrl) {
-        console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
-    }
-    if (!supabaseAnonKey) {
-        console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    }
+  // Only log in browser
+  if (!supabaseUrl) {
+    console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL');
+  }
+  if (!supabaseAnonKey) {
+    console.error('❌ Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  }
 }
 
 // Use SSR browser client for proper cookie handling with middleware
@@ -43,31 +47,31 @@ export const supabaseClient = createBrowserClient<Database>(
         }
         cookiesToSet.forEach(({ name, value, options }) => {
           let cookieString = `${name}=${value}`;
-          
+
           // Set path - default to root if not specified
           cookieString += `; Path=${options?.path || '/'}`;
-          
+
           // Set SameSite - important for cross-site requests
           cookieString += `; SameSite=${options?.sameSite || 'lax'}`;
-          
+
           // Set MaxAge if provided
           if (options?.maxAge) {
             cookieString += `; Max-Age=${options.maxAge}`;
           }
-          
+
           // Set domain if provided (usually not needed for same-domain)
           if (options?.domain) {
             cookieString += `; Domain=${options.domain}`;
           }
-          
+
           // Set Secure flag if in production or explicitly requested
           if (options?.secure || (typeof window !== 'undefined' && window.location.protocol === 'https:')) {
             cookieString += `; Secure`;
           }
-          
+
           // Note: HttpOnly cannot be set via document.cookie (security feature)
           // It must be set server-side, which Supabase SSR handles automatically
-          
+
           document.cookie = cookieString;
           console.log(`🍪 Set cookie: ${name} (Path: ${options?.path || '/'}, SameSite: ${options?.sameSite || 'lax'})`);
         });
