@@ -11,6 +11,7 @@ import {
 import { GoalCheckInModal } from '@/components/goals/GoalCheckInModal';
 import { PriorityBadge } from '@/components/goals/PriorityBadge';
 import { SubGoalsList } from '@/components/goals/SubGoalsList';
+import { IntentCalendar } from '@/components/calendar/intent/IntentCalendar';
 import { Plus, Trash2, History, Target, AlertCircle, Clock, CheckCircle2, XCircle, ArrowRight, Edit2, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -440,6 +441,19 @@ export function GoalsClient({ initialGoals, initialHistory }: GoalsClientProps) 
                 {renderCard('7d')}
                 {renderCard('30d')}
                 {renderCard('365d')}
+            </div>
+
+            {/* Intent Calendar View */}
+            <div className="mt-16">
+                <div className="mb-8">
+                    <h2 className="text-3xl font-bold tracking-tight mb-2" style={{ color: currentTheme.colors.foreground }}>
+                        Calendar View
+                    </h2>
+                    <p className="text-base" style={{ color: currentTheme.colors.mutedForeground }}>
+                        Visualize your goals across time. Switch between week, month, and year views.
+                    </p>
+                </div>
+                <IntentCalendar />
             </div>
 
             {expiredGoal && (
