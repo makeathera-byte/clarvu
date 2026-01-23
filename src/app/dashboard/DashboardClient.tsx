@@ -503,6 +503,16 @@ export function DashboardClient({
         }
     };
 
+    // Helper function to move a completed task to the bottom of the list
+    const moveTaskToBottom = useCallback((taskId: string) => {
+        setLocalTaskOrder(currentOrder => {
+            const newOrder = currentOrder.filter(id => id !== taskId);
+            newOrder.push(taskId);
+            localStorage.setItem('clarvu_task_order', JSON.stringify(newOrder));
+            return newOrder;
+        });
+    }, []);
+
     const handleToggleComplete = async (task: Task) => {
         const isActiveTask = activeTaskId === task.id;
         const state = useTimerStore.getState();
@@ -533,6 +543,8 @@ export function DashboardClient({
                 });
                 if (result.success && result.task) {
                     taskStore.addOrUpdate(result.task as any);
+                    // Move completed task to bottom of list
+                    moveTaskToBottom(task.id);
                 }
 
                 // Log to deep work if meaningful time spent
@@ -570,6 +582,8 @@ export function DashboardClient({
                         end_time: new Date().toISOString(),
                         duration_minutes: actualFocusMinutes || 0,
                     } as any);
+                    // Move completed task to bottom of list
+                    moveTaskToBottom(task.id);
                     // Reset the timer
                     closeTimer();
                 }
@@ -607,6 +621,8 @@ export function DashboardClient({
         });
         if (result.success && result.task) {
             taskStore.addOrUpdate(result.task as any);
+            // Move completed task to bottom of list
+            moveTaskToBottom(task.id);
         }
 
         // Log to deep work if meaningful time spent
