@@ -14,6 +14,7 @@ import { cleanupDuplicateCategories } from '@/app/dashboard/actions/cleanupCateg
 import { getSuggestionsForUser, recordSuggestionUse, TaskSuggestion } from '@/app/tasks/suggestionsActions';
 import { useTaskAutoStart } from '@/lib/hooks/useTaskAutoStart';
 import { DashboardOnboardingModal } from '@/components/dashboard/DashboardOnboardingModal';
+import { autoCleanupCompletedTasks } from '@/lib/utils/cleanupTasks';
 
 // Lazy load heavy components for better performance
 const CategoryPieChart = lazy(() => import('@/components/dashboard').then(m => ({ default: m.CategoryPieChart })));
@@ -202,6 +203,11 @@ export function DashboardClient({
         });
     }, []);
 
+    // Auto-cleanup old completed tasks (once per day)
+    useEffect(() => {
+        autoCleanupCompletedTasks();
+    }, []);
+
     // Set default time to current time ONLY on initial load
     useEffect(() => {
         const now = new Date();
@@ -282,10 +288,24 @@ export function DashboardClient({
     // Sort tasks: by status first, then by priority (high > medium > low)
     // Memoized to prevent unnecessary re-sorting on every render
     const sortedTasks = useMemo(() => {
+        // Get today's date at midnight for comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayTimestamp = today.getTime();
+
         // Filter out hidden tasks first, then sort
         return [...tasks]
             .filter(task => !hiddenTaskIds.has(task.id))
             .filter(task => !hideCompletedTasks || task.status !== 'completed') // Hide completed if toggle is on
+            .filter(task => {
+                // Only show tasks scheduled for today or earlier
+                // Unscheduled tasks (no start_time) always show
+                if (!task.start_time) return true;
+
+                const taskDate = new Date(task.start_time);
+                taskDate.setHours(0, 0, 0, 0);
+                return taskDate.getTime() <= todayTimestamp;
+            })
             .sort((a, b) => {
                 const statusOrder = { in_progress: 0, scheduled: 1, unscheduled: 2, completed: 3 };
                 const priorityOrder = { high: 0, medium: 1, low: 2 };
