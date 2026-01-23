@@ -100,7 +100,12 @@ export function GoalsClient({ initialGoals, initialHistory }: GoalsClientProps) 
     };
 
     const handleGoalUpdate = () => {
-        window.location.reload();
+        // Remove the expired goal from current state immediately for smooth UX
+        if (expiredGoal) {
+            setGoals(goals.filter(g => g.id !== expiredGoal.id));
+        }
+        // Refresh data from server in the background
+        router.refresh();
     };
 
     const handleProgressUpdate = async (goalId: string, percentage: number) => {
