@@ -391,8 +391,8 @@ export function DashboardClient({
             taskStore.addOrUpdate(optimisticTask);
 
             // Clear inputs IMMEDIATELY so user can add next task without waiting
+            // Keep category selected for batch adding tasks in same category
             setNewTaskTitle('');
-            setNewTaskCategory(null);
             setShowSuggestions(false);
             inputRef.current?.focus();
 
