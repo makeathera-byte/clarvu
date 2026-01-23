@@ -390,6 +390,12 @@ export function DashboardClient({
             // Add optimistically to store for immediate UI update
             taskStore.addOrUpdate(optimisticTask);
 
+            // Clear inputs IMMEDIATELY so user can add next task without waiting
+            setNewTaskTitle('');
+            setNewTaskCategory(null);
+            setShowSuggestions(false);
+            inputRef.current?.focus();
+
             const result = await createTaskAction({
                 title: newTaskTitle.trim(),
                 categoryId: newTaskCategory,
@@ -408,7 +414,7 @@ export function DashboardClient({
                 taskStore.remove(tempId);
 
                 // Record suggestion use for auto-learning
-                await recordSuggestionUse(newTaskTitle.trim(), newTaskCategory);
+                await recordSuggestionUse(optimisticTask.title, optimisticTask.category_id);
 
                 // If task should start NOW, show duration picker modal
                 if (shouldStartNow && isTaskScheduled) {
@@ -416,11 +422,6 @@ export function DashboardClient({
                     setTaskToStart(result.task as any);
                     setShowDurationModal(true);
                 }
-
-                setNewTaskTitle('');
-                setNewTaskCategory(null);
-                setShowSuggestions(false);
-                inputRef.current?.focus();
             } else {
                 // Remove optimistic task on error
                 taskStore.remove(tempId);
