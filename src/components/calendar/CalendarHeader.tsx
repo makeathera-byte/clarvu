@@ -9,7 +9,17 @@ import { useState } from 'react';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { CalendarModeToggle } from './CalendarModeToggle';
 
-export function CalendarHeader() {
+interface CalendarHeaderProps {
+    showModeToggle?: boolean;
+    showNewTaskButton?: boolean;
+    showViewSelector?: boolean;
+}
+
+export function CalendarHeader({
+    showModeToggle = true,
+    showNewTaskButton = true,
+    showViewSelector = false
+}: CalendarHeaderProps = {}) {
     const { view, selectedDate, setView, navigateNext, navigatePrevious, goToToday } = useCalendarViewStore();
     const { currentTheme } = useTheme();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -52,14 +62,37 @@ export function CalendarHeader() {
                     borderColor: currentTheme.colors.border,
                 }}
             >
-                <div className="flex items-center justify-between p-4 gap-4 max-w-[1800px] mx-auto">
+                <div className="flex flex-col sm:flex-row items-center justify-between p-4 gap-4 max-w-[1800px] mx-auto">
                     {/* Left: Mode Toggle (Execution/Intent) */}
-                    <div className="flex items-center gap-3">
-                        <CalendarModeToggle />
-                    </div>
+                    {showModeToggle && (
+                        <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+                            <CalendarModeToggle />
+                        </div>
+                    )}
+
+                    {/* View Selector (Week/Month/Year) */}
+                    {showViewSelector && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
+                            {(['week', 'month', 'year'] as CalendarView[]).map((v) => (
+                                <motion.button
+                                    key={v}
+                                    onClick={() => setView(v)}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+                                    style={{
+                                        backgroundColor: view === v ? currentTheme.colors.primary : `${currentTheme.colors.muted}80`,
+                                        color: view === v ? currentTheme.colors.primaryForeground : currentTheme.colors.mutedForeground,
+                                    }}
+                                >
+                                    {v.charAt(0).toUpperCase() + v.slice(1)}
+                                </motion.button>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Center: Date Display & Navigation */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 order-first sm:order-none w-full sm:w-auto justify-center">
                         <motion.button
                             onClick={navigatePrevious}
                             whileHover={{ scale: 1.1 }}
@@ -75,8 +108,8 @@ export function CalendarHeader() {
                             <ChevronLeft className="w-5 h-5" />
                         </motion.button>
 
-                        <div className="min-w-[200px] text-center">
-                            <h2 className="text-base font-bold" style={{ color: currentTheme.colors.foreground }}>
+                        <div className="min-w-[180px] sm:min-w-[200px] text-center">
+                            <h2 className="text-sm sm:text-base font-bold" style={{ color: currentTheme.colors.foreground }}>
                                 {formatDateDisplay()}
                             </h2>
                         </div>
@@ -98,12 +131,12 @@ export function CalendarHeader() {
                     </div>
 
                     {/* Right: Action Buttons */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
                         <motion.button
                             onClick={goToToday}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 font-medium shadow-sm text-sm"
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 font-medium shadow-sm text-xs sm:text-sm"
                             style={{
                                 backgroundColor: `${currentTheme.colors.muted}80`,
                                 color: currentTheme.colors.foreground,
@@ -115,28 +148,32 @@ export function CalendarHeader() {
                             <span>Today</span>
                         </motion.button>
 
-                        <motion.button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 font-semibold shadow-md hover:shadow-lg text-sm"
-                            style={{
-                                backgroundColor: currentTheme.colors.primary,
-                                color: currentTheme.colors.primaryForeground,
-                            }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">New Task</span>
-                        </motion.button>
+                        {showNewTaskButton && (
+                            <motion.button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 font-semibold shadow-md hover:shadow-lg text-xs sm:text-sm"
+                                style={{
+                                    backgroundColor: currentTheme.colors.primary,
+                                    color: currentTheme.colors.primaryForeground,
+                                }}
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">New Task</span>
+                            </motion.button>
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* Create Task Modal */}
-            <CreateTaskModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-            />
+            {showNewTaskButton && (
+                <CreateTaskModal
+                    isOpen={isCreateModalOpen}
+                    onClose={() => setIsCreateModalOpen(false)}
+                />
+            )}
         </>
     );
 }

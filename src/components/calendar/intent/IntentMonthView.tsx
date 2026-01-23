@@ -87,9 +87,9 @@ export function IntentMonthView({ onEditGoal, onCreateGoal }: IntentMonthViewPro
     };
 
     return (
-        <div className="flex gap-6">
-            {/* LEFT PANEL - Fixed width sidebar */}
-            <div className="w-80 flex-shrink-0 space-y-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+            {/* LEFT PANEL - Fixed width sidebar on desktop, full width on mobile */}
+            <div className="w-full lg:w-80 flex-shrink-0 space-y-6">
                 {/* Monthly Goals Section */}
                 <div>
                     <h2
@@ -164,7 +164,7 @@ export function IntentMonthView({ onEditGoal, onCreateGoal }: IntentMonthViewPro
                             return (
                                 <div
                                     key={`empty-${index}`}
-                                    className="aspect-square min-h-[80px]"
+                                    className="aspect-square min-h-[60px] sm:min-h-[80px]"
                                     style={{
                                         borderRight: (index + 1) % 7 !== 0 ? `1px solid ${currentTheme.colors.border}` : 'none',
                                         borderBottom: `1px solid ${currentTheme.colors.border}`,
@@ -190,7 +190,7 @@ export function IntentMonthView({ onEditGoal, onCreateGoal }: IntentMonthViewPro
                                 <motion.button
                                     onClick={() => setExpandedDate(isExpanded ? null : day.toDateString())}
                                     whileHover={{ scale: 1.01 }}
-                                    className="w-full min-h-[80px] p-3 text-left transition-all"
+                                    className="w-full min-h-[60px] sm:min-h-[80px] p-2 sm:p-3 text-left transition-all"
                                     style={{
                                         backgroundColor: isDayHighlighted
                                             ? `${currentTheme.colors.accent}15`
@@ -201,7 +201,7 @@ export function IntentMonthView({ onEditGoal, onCreateGoal }: IntentMonthViewPro
                                 >
                                     <div className="flex justify-between items-start">
                                         <span
-                                            className="text-lg font-bold"
+                                            className="text-base sm:text-lg font-bold"
                                             style={{
                                                 color: isSelectedDay ? currentTheme.colors.primary : currentTheme.colors.foreground
                                             }}

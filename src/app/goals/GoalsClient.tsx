@@ -12,6 +12,8 @@ import { GoalCheckInModal } from '@/components/goals/GoalCheckInModal';
 import { PriorityBadge } from '@/components/goals/PriorityBadge';
 import { SubGoalsList } from '@/components/goals/SubGoalsList';
 import { IntentCalendar } from '@/components/calendar/intent/IntentCalendar';
+import { CalendarHeader } from '@/components/calendar/CalendarHeader';
+import { useCalendarViewStore } from '@/lib/store/useCalendarViewStore';
 import { Plus, Trash2, History, Target, AlertCircle, Clock, CheckCircle2, XCircle, ArrowRight, Edit2, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -24,6 +26,7 @@ interface GoalsClientProps {
 export function GoalsClient({ initialGoals, initialHistory }: GoalsClientProps) {
     const { currentTheme } = useTheme();
     const router = useRouter();
+    const { setView } = useCalendarViewStore();
     const [goals, setGoals] = useState<Goal[]>(initialGoals);
     const [history, setHistory] = useState<Goal[]>(initialHistory);
     const [expiredGoal, setExpiredGoal] = useState<Goal | null>(null);
@@ -37,6 +40,11 @@ export function GoalsClient({ initialGoals, initialHistory }: GoalsClientProps) 
 
     // Goal viewing state
     const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
+
+    // Set default calendar view to month
+    useEffect(() => {
+        setView('month');
+    }, [setView]);
 
     // Initial check for expired goals
     useEffect(() => {
@@ -453,7 +461,16 @@ export function GoalsClient({ initialGoals, initialHistory }: GoalsClientProps) 
                         Visualize your goals across time. Switch between week, month, and year views.
                     </p>
                 </div>
-                <IntentCalendar />
+                {/* Calendar Navigation Header */}
+                <CalendarHeader
+                    showModeToggle={false}
+                    showNewTaskButton={false}
+                    showViewSelector={true}
+                />
+                {/* Calendar Display */}
+                <div className="mt-6">
+                    <IntentCalendar />
+                </div>
             </div>
 
             {expiredGoal && (
