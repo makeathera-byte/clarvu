@@ -98,7 +98,6 @@ export function LoginForm() {
                 <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}
-                    useOneTap
                     text="signin_with"
                     shape="rectangular"
                     theme="outline"
