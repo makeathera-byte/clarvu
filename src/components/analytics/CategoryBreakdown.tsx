@@ -12,6 +12,7 @@ interface Task {
     category_id: string | null;
     start_time: string | null;
     end_time: string | null;
+    created_at: string;
 }
 
 interface Category {

@@ -16,6 +16,10 @@ interface ProfileTheme {
 
 export default async function SettingsLayout({ children }: SettingsLayoutProps) {
     let initialThemeId = defaultTheme.id;
+    let userName = 'User';
+    let userEmail: string | null = null;
+    let userAvatar: string | null = null;
+    let isAdmin = false;
 
     try {
         const supabase = await createClient();
@@ -25,17 +29,28 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
 
         // Load theme from profile if user is authenticated
         if (user) {
+            userEmail = user.email || null;
+            userAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+
             const { data: profile } = await supabase
                 .from('profiles')
-                .select('theme_name')
+                .select('theme_name, full_name, is_admin')
                 .eq('id', user.id)
-                .single<ProfileTheme>();
+                .single<ProfileTheme & { full_name: string | null; is_admin: boolean | null }>();
 
             if (profile?.theme_name) {
                 const theme = getThemeById(profile.theme_name);
                 if (theme) {
                     initialThemeId = profile.theme_name;
                 }
+            }
+
+            if (profile?.full_name) {
+                userName = profile.full_name;
+            }
+
+            if (profile?.is_admin) {
+                isAdmin = true;
             }
         }
     } catch (error) {
@@ -47,7 +62,7 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
         <ThemeProvider initialThemeId={initialThemeId}>
             <div className="min-h-screen">
                 <BackgroundRenderer />
-                <Navbar />
+                <Navbar userName={userName} userEmail={userEmail} userAvatar={userAvatar} isAdmin={isAdmin} />
                 <SettingsSidebar />
                 <div className="lg:pl-64">
                     {children}

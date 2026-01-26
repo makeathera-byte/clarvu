@@ -10,9 +10,10 @@ import { useActiveTaskGrowth } from '@/lib/hooks/useActiveTaskGrowth';
 
 interface WeekViewProps {
     onEditTask: (task: any) => void;
+    onDateClick?: (date: Date) => void;
 }
 
-export function WeekView({ onEditTask }: WeekViewProps) {
+export function WeekView({ onEditTask, onDateClick }: WeekViewProps) {
     const { selectedDate } = useCalendarViewStore();
     const { tasks } = useTaskStore();
     const { events } = useCalendarStore();

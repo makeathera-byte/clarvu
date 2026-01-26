@@ -8,22 +8,23 @@ import { YearView } from './YearView';
 
 interface ViewRendererProps {
     onEditTask: (task: any) => void;
+    onDateClick?: (date: Date) => void;
 }
 
-export function ViewRenderer({ onEditTask }: ViewRendererProps) {
+export function ViewRenderer({ onEditTask, onDateClick }: ViewRendererProps) {
     const { view } = useCalendarViewStore();
 
     switch (view) {
         case 'day':
-            return <DayView onEditTask={onEditTask} />;
+            return <DayView onEditTask={onEditTask} onDateClick={onDateClick} />;
         case 'week':
-            return <WeekView onEditTask={onEditTask} />;
+            return <WeekView onEditTask={onEditTask} onDateClick={onDateClick} />;
         case 'month':
-            return <MonthView onEditTask={onEditTask} />;
+            return <MonthView onEditTask={onEditTask} onDateClick={onDateClick} />;
         case 'year':
-            return <YearView onEditTask={onEditTask} />;
+            return <YearView onEditTask={onEditTask} onDateClick={onDateClick} />;
         default:
-            return <DayView onEditTask={onEditTask} />;
+            return <DayView onEditTask={onEditTask} onDateClick={onDateClick} />;
     }
 }
 

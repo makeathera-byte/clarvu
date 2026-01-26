@@ -27,14 +27,15 @@ export default async function AnalyticsPage() {
             fetchAllCategories(),
         ]);
 
-    // Filter week tasks (last 7 days)
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    weekAgo.setHours(0, 0, 0, 0);
+        // Filter week tasks (last 7 days)
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
 
-    const weekTasks = allTasks.filter(t =>
-        t.start_time && new Date(t.start_time) >= weekAgo
-    );
+        const weekTasks = allTasks.filter(t => {
+            const relevantDate = t.start_time ? new Date(t.start_time) : new Date(t.created_at);
+            return relevantDate >= weekAgo;
+        });
 
         return (
             <AnalyticsClient

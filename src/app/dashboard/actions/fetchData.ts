@@ -97,23 +97,27 @@ export async function fetchTodayTasks(): Promise<TaskFromDB[]> {
         }));
 
         // Filter to only include tasks that are either:
-        // - Scheduled for today (start_time within range)
-        // - Unscheduled tasks (backlog - no start_time or is_scheduled = false)
-        // - In progress or completed today
+        // - Scheduled for today (start_time within today's range)
+        // - Unscheduled backlog tasks (status='unscheduled' OR is_scheduled=false with no future start_time)
         const filteredData = tasksWithDefaults.filter((task: TaskFromDB) => {
-            // Include unscheduled tasks (backlog)
-            if (task.status === 'unscheduled' || (!task.is_scheduled && !task.start_time)) {
+            // Include truly unscheduled tasks (backlog with no date)
+            if (task.status === 'unscheduled' && !task.start_time) {
                 return true;
             }
 
-            // If no start_time, exclude (unless it's unscheduled which we handled above)
-            if (!task.start_time) {
-                return false;
+            // Include tasks explicitly marked as unscheduled with no scheduled time
+            if (!task.is_scheduled && !task.start_time) {
+                return true;
             }
 
-            // Include tasks scheduled for today
-            const taskStart = new Date(task.start_time);
-            return taskStart >= start && taskStart < end;
+            // If task has a start_time, check if it's for today
+            if (task.start_time) {
+                const taskStart = new Date(task.start_time);
+                return taskStart >= start && taskStart < end;
+            }
+
+            // Exclude everything else (tasks without start_time that aren't explicitly unscheduled)
+            return false;
         });
 
         return filteredData;

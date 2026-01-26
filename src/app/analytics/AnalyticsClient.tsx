@@ -4,6 +4,7 @@ import {
     AnalyticsHeader,
     StatsSummary,
     DeepWorkCard,
+    TotalTimeCard,
     MostProductiveHour,
     WeekOverviewChart,
     CategoryBreakdown,
@@ -57,9 +58,10 @@ export function AnalyticsClient({
                     categories={categories}
                 />
 
-                {/* Deep Work + Most Productive Hour */}
-                <div className="grid lg:grid-cols-2 gap-6 mb-6">
+                {/* Deep Work + Total Time + Most Productive Hour */}
+                <div className="grid lg:grid-cols-3 gap-6 mb-6">
                     <DeepWorkCard tasks={todayTasks} categories={categories} />
+                    <TotalTimeCard tasks={todayTasks} />
                     <MostProductiveHour tasks={allTasks} />
                 </div>
 

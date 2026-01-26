@@ -3,6 +3,33 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+// Get Profile
+export async function getProfile() {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Not authenticated' };
+
+    const { data, error } = await (supabase as any)
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    if (error) return { error: error.message };
+
+    return {
+        success: true,
+        profile: {
+            full_name: data.full_name || '',
+            bio: data.bio || '',
+            timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+            country: data.country || '',
+            email: user.email || '',
+        }
+    };
+}
+
 // Update Profile
 export async function updateProfileAction(data: {
     full_name?: string;

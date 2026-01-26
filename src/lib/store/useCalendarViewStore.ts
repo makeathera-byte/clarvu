@@ -17,7 +17,7 @@ interface CalendarViewState {
 }
 
 export const useCalendarViewStore = create<CalendarViewState>((set, get) => ({
-    view: 'day',
+    view: 'year', // Default to year view
     selectedDate: new Date(),
     isLoading: false,
 

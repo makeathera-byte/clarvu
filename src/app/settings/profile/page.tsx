@@ -1,16 +1,18 @@
 'use client';
 
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { User, Camera, Check, MapPin, Clock } from 'lucide-react';
-import { updateProfileAction } from '../actions';
+import { updateProfileAction, getProfile } from '../actions';
 
 export default function ProfileSettingsPage() {
     const { currentTheme } = useTheme();
     const [isPending, startTransition] = useTransition();
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [email, setEmail] = useState('');
 
     const [form, setForm] = useState({
         full_name: '',
@@ -18,6 +20,29 @@ export default function ProfileSettingsPage() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         country: '',
     });
+
+    // Fetch profile data on mount
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const result = await getProfile();
+            if (result.success && result.profile) {
+                // Use browser timezone if database has UTC or empty
+                const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const dbTimezone = result.profile.timezone;
+                const effectiveTimezone = (!dbTimezone || dbTimezone === 'UTC') ? browserTimezone : dbTimezone;
+
+                setForm({
+                    full_name: result.profile.full_name,
+                    bio: result.profile.bio,
+                    timezone: effectiveTimezone,
+                    country: result.profile.country,
+                });
+                setEmail(result.profile.email);
+            }
+            setIsLoading(false);
+        };
+        fetchProfile();
+    }, []);
 
     const handleSave = () => {
         startTransition(async () => {

@@ -9,9 +9,10 @@ import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MonthViewProps {
     onEditTask: (task: any) => void;
+    onDateClick?: (date: Date) => void;
 }
 
-export function MonthView({ onEditTask }: MonthViewProps) {
+export function MonthView({ onEditTask, onDateClick }: MonthViewProps) {
     const { selectedDate } = useCalendarViewStore();
     const { tasks } = useTaskStore();
     const { currentTheme } = useTheme();
@@ -76,7 +77,7 @@ export function MonthView({ onEditTask }: MonthViewProps) {
         return day.toDateString() === new Date().toDateString();
     };
 
-    const handleDayClick = (day: Date) => {
+    const handleDayClick = (day: Date, e?: React.MouseEvent) => {
         const dayStr = day.toDateString();
         setExpandedDate(expandedDate === dayStr ? null : dayStr);
     };
@@ -141,7 +142,7 @@ export function MonthView({ onEditTask }: MonthViewProps) {
                             }}
                         >
                             <motion.button
-                                onClick={() => handleDayClick(day)}
+                                onClick={(e) => handleDayClick(day, e)}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className="w-full min-h-[80px] p-3 text-left transition-all duration-200"
@@ -216,13 +217,57 @@ export function MonthView({ onEditTask }: MonthViewProps) {
                                             backgroundColor: `${currentTheme.colors.muted}80`,
                                         }}
                                     >
-                                        <h3
-                                            className="text-base font-bold mb-3 flex items-center gap-2"
-                                            style={{ color: currentTheme.colors.foreground }}
-                                        >
-                                            <Clock className="w-4 h-4" />
-                                            {day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                        </h3>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3
+                                                className="text-base font-bold flex items-center gap-2"
+                                                style={{ color: currentTheme.colors.foreground }}
+                                            >
+                                                <Clock className="w-4 h-4" />
+                                                {day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                            </h3>
+                                            {onDateClick && (() => {
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+                                                const checkDate = new Date(day);
+                                                checkDate.setHours(0, 0, 0, 0);
+                                                const isPastDate = checkDate < today;
+
+                                                if (isPastDate) {
+                                                    return (
+                                                        <div
+                                                            className="text-xs px-2 py-1 rounded-lg"
+                                                            style={{
+                                                                backgroundColor: `${currentTheme.colors.mutedForeground}20`,
+                                                                color: currentTheme.colors.mutedForeground
+                                                            }}
+                                                        >
+                                                            Past date
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onDateClick(day);
+                                                        }}
+                                                        className="p-2 rounded-lg transition-colors"
+                                                        style={{
+                                                            backgroundColor: currentTheme.colors.primary,
+                                                            color: currentTheme.colors.primaryForeground,
+                                                        }}
+                                                        title="Create task for this date"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                        </svg>
+                                                    </motion.button>
+                                                );
+                                            })()}
+                                        </div>
                                         <div className="space-y-2 max-h-64 overflow-y-auto">
                                             {dayTasks.length > 0 ? (
                                                 dayTasks.map((task: any) => (
@@ -296,7 +341,8 @@ export function MonthView({ onEditTask }: MonthViewProps) {
                                                 >
                                                     No tasks for this day
                                                 </div>
-                                            )}
+                                            )
+                                            }
                                         </div>
                                     </motion.div>
                                 )}
@@ -305,6 +351,6 @@ export function MonthView({ onEditTask }: MonthViewProps) {
                     );
                 })}
             </div>
-        </div>
+        </div >
     );
 }

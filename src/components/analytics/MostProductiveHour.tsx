@@ -9,6 +9,7 @@ interface Task {
     status: 'scheduled' | 'in_progress' | 'completed';
     start_time: string | null;
     duration_minutes: number | null;
+    created_at: string;
 }
 
 interface MostProductiveHourProps {
@@ -22,9 +23,10 @@ export function MostProductiveHour({ tasks }: MostProductiveHourProps) {
     const hourBuckets: Record<number, number> = {};
 
     tasks
-        .filter(t => t.status === 'completed' && t.start_time)
+        .filter(t => t.status === 'completed')
         .forEach(task => {
-            const hour = new Date(task.start_time!).getHours();
+            const dateToUse = task.start_time || task.created_at;
+            const hour = new Date(dateToUse).getHours();
             const duration = task.duration_minutes || 30;
             hourBuckets[hour] = (hourBuckets[hour] || 0) + duration;
         });

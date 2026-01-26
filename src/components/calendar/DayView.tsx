@@ -10,9 +10,10 @@ import { useActiveTaskGrowth } from '@/lib/hooks/useActiveTaskGrowth';
 
 interface DayViewProps {
     onEditTask: (task: any) => void;
+    onDateClick?: (date: Date) => void;
 }
 
-export function DayView({ onEditTask }: DayViewProps) {
+export function DayView({ onEditTask, onDateClick }: DayViewProps) {
     const { selectedDate } = useCalendarViewStore();
     const { tasks } = useTaskStore();
     const { events } = useCalendarStore();

@@ -9,13 +9,14 @@ import { motion } from 'framer-motion';
 
 interface YearViewProps {
     onEditTask: (task: any) => void;
+    onDateClick?: (date: Date) => void;
 }
 
 /**
  * YearView - Year-at-a-glance task calendar
  * Quarter-based layout with compact month grids showing task indicators
  */
-export function YearView({ onEditTask }: YearViewProps) {
+export function YearView({ onEditTask, onDateClick }: YearViewProps) {
     const { selectedDate, setSelectedDate, setView } = useCalendarViewStore();
     const { tasks } = useTaskStore();
     const { currentTheme } = useTheme();

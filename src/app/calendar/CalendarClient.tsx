@@ -10,7 +10,7 @@ import { CalendarModeToggle } from '@/components/calendar/CalendarModeToggle';
 import { CalendarHeader } from '@/components/calendar/CalendarHeader';
 import { ViewRenderer } from '@/components/calendar/ViewRenderer';
 import { IntentCalendar } from '@/components/calendar/intent/IntentCalendar';
-import { EditTaskModal } from '@/components/tasks/EditTaskModal';
+import { EditTaskModal, CreateTaskModal } from '@/components/tasks';
 import { CreateGoalModal } from '@/components/goals/CreateGoalModal';
 import { fetchCalendarTasks, CalendarTask } from './actions/fetchCalendarTasks';
 import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
@@ -36,6 +36,10 @@ export function CalendarClient({
     const [editingTask, setEditingTask] = useState<any>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+    // Task creation modal state
+    const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+    const [selectedDateForTask, setSelectedDateForTask] = useState<Date | undefined>(undefined);
 
     // Goal modal state
     const [isCreateGoalModalOpen, setIsCreateGoalModalOpen] = useState(false);
@@ -114,6 +118,23 @@ export function CalendarClient({
         setIsEditModalOpen(true);
     }, []);
 
+    const handleDateClick = useCallback((date: Date) => {
+        setSelectedDateForTask(date);
+        setIsCreateTaskModalOpen(true);
+    }, []);
+
+    // Manually refresh tasks after creation
+    const handleTaskCreated = useCallback(async () => {
+        const { startDate, endDate } = getDateRangeForView(view, selectedDate);
+        const result = await fetchCalendarTasks(
+            startDate.toISOString(),
+            endDate.toISOString()
+        );
+        if (result.success && result.tasks) {
+            taskStore.setFromServer(result.tasks as any);
+        }
+    }, [view, selectedDate, taskStore]);
+
     const { mode } = useCalendarModeStore();
 
     // Keyboard shortcuts for Intent calendar
@@ -138,7 +159,7 @@ export function CalendarClient({
             <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
                 {/* Conditional rendering based on mode */}
                 {mode === 'execution' ? (
-                    <ViewRenderer onEditTask={handleEditTask} />
+                    <ViewRenderer onEditTask={handleEditTask} onDateClick={handleDateClick} />
                 ) : (
                     <IntentCalendar
                         onEditGoal={(goal) => {
@@ -167,6 +188,17 @@ export function CalendarClient({
                     }}
                 />
             )}
+
+            {/* Create Task Modal (for Execution mode) */}
+            <CreateTaskModal
+                isOpen={isCreateTaskModalOpen}
+                onClose={() => {
+                    setIsCreateTaskModalOpen(false);
+                    setSelectedDateForTask(undefined);
+                }}
+                initialDate={selectedDateForTask}
+                onTaskCreated={handleTaskCreated}
+            />
 
             {/* Create Goal Modal */}
             <CreateGoalModal

@@ -14,9 +14,11 @@ import { SuggestionsList } from './SuggestionsList';
 interface CreateTaskModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialDate?: Date;
+    onTaskCreated?: () => void;
 }
 
-export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
+export function CreateTaskModal({ isOpen, onClose, initialDate, onTaskCreated }: CreateTaskModalProps) {
     const { currentTheme } = useTheme();
     const { startTaskTimer } = useTimerStore();
     // Use categories from global store (single source of truth)
@@ -27,9 +29,11 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
     const [startTime, setStartTime] = useState('');
     const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
     const [isScheduled, setIsScheduled] = useState(true);
+    const [isTimeScheduled, setIsTimeScheduled] = useState(false); // Whether to schedule a specific time
     const [isLoading, setIsLoading] = useState(false);
     const [isStartingNow, setIsStartingNow] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [taskDate, setTaskDate] = useState<Date>(new Date()); // Store the date for the task
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Suggestions state
@@ -74,19 +78,20 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
             setCategoryId(null);
             setStartTime('');
             setPriority('medium');
-            setIsScheduled(true);
+            setIsTimeScheduled(false); // Default to no specific time
             setError(null);
             setSuggestions([]);
             setShowSuggestions(false);
-            // Set default time to now
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
+            // Set default time - use initialDate if provided, otherwise use current time
+            const dateToUse = initialDate || new Date();
+            setTaskDate(dateToUse); // Store the full date for use when creating the task
+            const hours = dateToUse.getHours().toString().padStart(2, '0');
+            const minutes = dateToUse.getMinutes().toString().padStart(2, '0');
             setStartTime(`${hours}:${minutes}`);
             // Autofocus with slight delay for animation
             setTimeout(() => inputRef.current?.focus(), 100);
         }
-    }, [isOpen]);
+    }, [isOpen, initialDate]);
 
     // Handle keyboard navigation for suggestions
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -148,19 +153,22 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
         setError(null);
 
         try {
-            // Build full datetime from time input (today's date)
-            const today = new Date();
-            if (isScheduled && startTime) {
+            // Build full datetime from time input and the stored task date
+            const taskDateTime = new Date(taskDate); // Use the date from when modal opened (clicked date)
+            if (isTimeScheduled && startTime) {
                 const [hours, minutes] = startTime.split(':').map(Number);
-                today.setHours(hours, minutes, 0, 0);
+                taskDateTime.setHours(hours, minutes, 0, 0);
+            } else {
+                // If no specific time, set to start of day
+                taskDateTime.setHours(0, 0, 0, 0);
             }
 
             const result = await createTaskAction({
                 title: title.trim(),
                 categoryId,
-                startTime: today.toISOString(),
+                startTime: taskDateTime.toISOString(),
                 priority,
-                isScheduled,
+                isScheduled: true, // Always scheduled with a date
             });
 
             if (result.error) {
@@ -179,6 +187,10 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                         startTaskTimer(result.task.id, result.task.title, 30 * 60);
                     }
                 }
+                // Call onTaskCreated callback to refresh calendar
+                if (onTaskCreated) {
+                    await onTaskCreated();
+                }
                 onClose();
             }
         } catch {
@@ -187,7 +199,7 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
             setIsLoading(false);
             setIsStartingNow(false);
         }
-    }, [title, categoryId, startTime, onClose, startTaskTimer]);
+    }, [title, categoryId, startTime, isTimeScheduled, taskDate, onClose, startTaskTimer, onTaskCreated]);
 
     // Handle suggestion selection
     const handleSelectSuggestion = (suggestion: TaskSuggestion) => {
@@ -432,7 +444,34 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                             </div>
                         </div>
 
-                        {/* Schedule Toggle */}
+                        {/* Date Picker - Always visible */}
+                        <div className="space-y-2">
+                            <label
+                                className="flex items-center gap-2 text-sm font-medium"
+                                style={{ color: currentTheme.colors.foreground }}
+                            >
+                                <Clock className="w-4 h-4" />
+                                Date
+                            </label>
+                            <input
+                                type="date"
+                                value={taskDate.toISOString().split('T')[0]}
+                                onChange={(e) => {
+                                    const newDate = new Date(e.target.value);
+                                    // Preserve the time from taskDate
+                                    newDate.setHours(taskDate.getHours(), taskDate.getMinutes(), 0, 0);
+                                    setTaskDate(newDate);
+                                }}
+                                className="w-full h-12 px-4 rounded-xl border-2 outline-none transition-all focus:border-current"
+                                style={{
+                                    backgroundColor: currentTheme.colors.muted,
+                                    color: currentTheme.colors.foreground,
+                                    borderColor: 'transparent',
+                                }}
+                            />
+                        </div>
+
+                        {/* Time Schedule Toggle */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label
@@ -440,33 +479,33 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                                     style={{ color: currentTheme.colors.foreground }}
                                 >
                                     <Clock className="w-4 h-4" />
-                                    Schedule this task
+                                    Schedule specific time
                                 </label>
                                 <motion.button
                                     type="button"
                                     whileTap={{ scale: 0.95 }}
-                                    onClick={() => setIsScheduled(!isScheduled)}
+                                    onClick={() => setIsTimeScheduled(!isTimeScheduled)}
                                     className="relative w-12 h-6 rounded-full transition-colors"
                                     style={{
-                                        backgroundColor: isScheduled ? currentTheme.colors.primary : currentTheme.colors.muted,
+                                        backgroundColor: isTimeScheduled ? currentTheme.colors.primary : currentTheme.colors.muted,
                                     }}
                                 >
                                     <motion.div
-                                        animate={{ x: isScheduled ? 24 : 2 }}
+                                        animate={{ x: isTimeScheduled ? 24 : 2 }}
                                         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                         className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-md"
                                     />
                                 </motion.button>
                             </div>
-                            {!isScheduled && (
+                            {!isTimeScheduled && (
                                 <p className="text-xs" style={{ color: currentTheme.colors.mutedForeground }}>
-                                    Task will be added without a scheduled time
+                                    Task will be scheduled for the date without a specific time
                                 </p>
                             )}
                         </div>
 
-                        {/* Time Input (only shown when scheduled) */}
-                        {isScheduled && (
+                        {/* Time Input (only shown when time is scheduled) */}
+                        {isTimeScheduled && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
@@ -511,22 +550,20 @@ export function CreateTaskModal({ isOpen, onClose }: CreateTaskModalProps) {
                             </Button>
                         </motion.div>
 
-                        {isScheduled && (
-                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
-                                <Button
-                                    onClick={() => handleSubmit(true)}
-                                    disabled={isLoading || isStartingNow}
-                                    className="w-full h-12 rounded-xl font-medium"
-                                    style={{
-                                        backgroundColor: currentTheme.colors.primary,
-                                        color: currentTheme.colors.primaryForeground,
-                                        boxShadow: `0 8px 25px ${currentTheme.colors.primary}40`,
-                                    }}
-                                >
-                                    {isStartingNow ? 'Starting...' : 'Create & Start'}
-                                </Button>
-                            </motion.div>
-                        )}
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                            <Button
+                                onClick={() => handleSubmit(true)}
+                                disabled={isLoading || isStartingNow}
+                                className="w-full h-12 rounded-xl font-medium"
+                                style={{
+                                    backgroundColor: currentTheme.colors.primary,
+                                    color: currentTheme.colors.primaryForeground,
+                                    boxShadow: `0 8px 25px ${currentTheme.colors.primary}40`,
+                                }}
+                            >
+                                {isStartingNow ? 'Starting...' : 'Create & Start'}
+                            </Button>
+                        </motion.div>
                     </div>
                 </motion.div>
             </motion.div>

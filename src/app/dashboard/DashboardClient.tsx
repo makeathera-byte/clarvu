@@ -87,7 +87,7 @@ export function DashboardClient({
     const [newTaskCategory, setNewTaskCategory] = useState<string | null>(null);
     const [isAdding, setIsAdding] = useState(false);
     const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-    const [isTaskScheduled, setIsTaskScheduled] = useState(true);
+    const [isTaskScheduled, setIsTaskScheduled] = useState(false); // Scheduling OFF by default - tasks go to backlog
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState('');

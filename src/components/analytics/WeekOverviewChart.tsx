@@ -11,6 +11,7 @@ interface Task {
     start_time: string | null;
     duration_minutes: number | null;
     category_id: string | null;
+    created_at: string;
 }
 
 interface Category {
@@ -46,12 +47,12 @@ export function WeekOverviewChart({ tasks, categories }: WeekOverviewChartProps)
 
     // Calculate deep work minutes per day
     tasks
-        .filter(t => t.status === 'completed' && t.start_time)
+        .filter(t => t.status === 'completed')
         .forEach(task => {
             const type = categoryTypeMap.get(task.category_id || '');
             if (!type || !deepWorkTypes.includes(type)) return;
 
-            const taskDate = new Date(task.start_time!);
+            const taskDate = new Date(task.start_time || task.created_at);
             taskDate.setHours(0, 0, 0, 0);
 
             const dayEntry = days.find(d => d.date.getTime() === taskDate.getTime());

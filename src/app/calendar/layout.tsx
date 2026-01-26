@@ -20,6 +20,8 @@ interface ProfileTheme {
 export default async function CalendarLayout({ children }: CalendarLayoutProps) {
     let initialThemeId = defaultTheme.id;
     let userName = 'User';
+    let userEmail: string | null = null;
+    let userAvatar: string | null = null;
     let isAdmin = false;
 
     try {
@@ -30,6 +32,9 @@ export default async function CalendarLayout({ children }: CalendarLayoutProps) 
 
         // Load theme and user name from profile if user is authenticated
         if (user) {
+            userEmail = user.email || null;
+            userAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('theme_name, full_name, country, is_admin')
@@ -62,7 +67,7 @@ export default async function CalendarLayout({ children }: CalendarLayoutProps) 
         <ThemeProvider initialThemeId={initialThemeId}>
             <div className="min-h-screen">
                 <BackgroundRenderer />
-                <Navbar userName={userName} isAdmin={isAdmin} />
+                <Navbar userName={userName} userEmail={userEmail} userAvatar={userAvatar} isAdmin={isAdmin} />
                 <CalendarViewToggleNavbar />
                 <FocusSoundPanel />
                 <RealtimeProvider userId={null}>
